@@ -48,6 +48,10 @@ which checks the contract while strict mode is on.
 - An action's `item` is the item under the cursor; `selected_items` is nil
   when nothing is selected.
 - A matcher with `incremental = true` has its results shown while it runs.
+- A matcher may define `narrows(previous, query)`: returning true promises
+  that every item `query` lets through is one `previous` let through. The
+  picker then hands the matcher only what the last match let through, in
+  collection order; leave it out when unsure.
 
 Modules that take options are functions that return the module:
 `builtin.source.file({ ... })`. They are always called, options or not.
@@ -56,7 +60,7 @@ Modules that take options are functions that return the module:
 
 | Member | Does |
 | --- | --- |
-| `ctx.host` | the editor (`lese.host`): `call`, `fn`, `cmd`, `eval`, `defer`, `spawn`, `echo`, … |
+| `ctx.host` | the editor (`lese.host`): `call`, `fn`, `cmd`, `eval`, `defer`, `spawn`, `readdir`, `echo`, … |
 | `ctx.name` | the running module's name |
 | `ctx:emit(item_or_items)` | hands an item, or a list of items, over |
 | `ctx:checkpoint()` | yields when the time budget is used, and raises when the run was cancelled |
