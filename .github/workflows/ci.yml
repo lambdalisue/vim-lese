@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A pull request only needs its latest commit checked. A run on main waits
+# for the one before it instead of cancelling it, so each one finishes and
+# saves the caches that pull requests start from.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31.11.2
+        if: runner.os != 'Windows'
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      # The store the development shell comes from, including the two Vim
+      # builds. Only an exact match is restored, and only main saves, so pull
+      # requests cannot evict the caches each other start from.
+      - uses: nix-community/cache-nix-action@v7.0.2
+        if: runner.os != 'Windows'
+        with:
+          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          save: ${{ github.ref == 'refs/heads/main' }}
+      # Load the development shell (flake.nix) into the job, so the steps
+      # below run the same commands on every OS.
+      - uses: nicknovitski/nix-develop@v1.2.1
+        if: runner.os != 'Windows'
+      # Nix does not run on Windows. Neovim and the linters come from their
+      # own releases, and the tests run on Neovim only: Vim's Windows builds
+      # load Lua from a DLL that nothing here provides.
+      - uses: rhysd/action-setup-vim@v1.6.1
+        if: runner.os == 'Windows'
+        with:
+          neovim: true
+      - uses: taiki-e/install-action@v2.87.29
+        if: runner.os == 'Windows'
+        with:
+          tool: just
+      - name: Install the linters
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tools="$RUNNER_TEMP/tools"
+          fetch() {
+            gh release download --repo "$1" --pattern "$2" --dir "$tools/$3"
+            unzip -q "$tools/$3"/*.zip -d "$tools/$3"
+          }
+          fetch JohnnyMorganz/StyLua 'stylua-windows-x86_64.zip' stylua
+          fetch Kampfkarren/selene 'selene-[0-9]*-windows.zip' selene
+          fetch LuaLS/lua-language-server '*-win32-x64.zip' luals
+          printf '%s\n' "$tools/stylua" "$tools/selene" "$tools/luals/bin" >> "$GITHUB_PATH"
+      # The same gate as local development (justfile).
+      - run: just ci
+        shell: bash
+        env:
+          CI: "1"
+          HOSTS: ${{ runner.os == 'Windows' && 'nvim' || 'nvim vim vim-luajit' }}
