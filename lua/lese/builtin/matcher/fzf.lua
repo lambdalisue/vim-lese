@@ -71,6 +71,19 @@ do
   end
 end
 
+-- Folded values per item, kept between keystrokes; weak, so an item dropped by
+-- the picker takes its entry with it.
+local FOLDED = setmetatable({}, { __mode = "k" })
+
+local function folded_value(item)
+  local folded = FOLDED[item]
+  if not folded then
+    folded = fold(item.value)
+    FOLDED[item] = folded
+  end
+  return folded
+end
+
 local SPACE = " \t\r\n\f\v"
 local LEADING_SPACE = "^[" .. SPACE .. "]*"
 local TRAILING_SPACE = "[" .. SPACE .. "]*$"
@@ -313,7 +326,8 @@ local MATCH = {
 }
 
 -- Score `text` against every group, or return nil when a group fails.
-local function score_item(text, groups, starts, lengths)
+local function score_item(item, groups, starts, lengths)
+  local text = item.value
   local folded
   local total = 0
   for g = 1, #groups do
@@ -323,7 +337,7 @@ local function score_item(text, groups, starts, lengths)
       local term = group[t]
       local target = text
       if not term.case_sensitive then
-        folded = folded or fold(text)
+        folded = folded or folded_value(item)
         target = folded
       end
       if term.inverse then
@@ -405,7 +419,13 @@ local function decorate(item, starts, lengths)
   return copy
 end
 
+local SPACE_BYTE = { [9] = true, [10] = true, [11] = true, [12] = true, [13] = true, [32] = true }
+
 local function trimmed_length(value)
+  local n = #value
+  if n == 0 or not (SPACE_BYTE[byte(value, 1)] or SPACE_BYTE[byte(value, n)]) then
+    return n
+  end
   local s = select(2, find(value, LEADING_SPACE)) + 1
   local e = find(value, TRAILING_SPACE) - 1
   return e >= s and e - s + 1 or 0
@@ -483,7 +503,7 @@ return function(opts)
         for j = #starts, 1, -1 do
           starts[j], lengths[j] = nil, nil
         end
-        local score = score_item(item.value, groups, starts, lengths)
+        local score = score_item(item, groups, starts, lengths)
         if score then
           local n = #found + 1
           found[n] = decorate(item, starts, lengths)
