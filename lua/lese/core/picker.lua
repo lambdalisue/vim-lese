@@ -317,7 +317,7 @@ function Picker:request_match(restart)
   self.match_dirty = false
   local matcher = self:matcher()
   local query = self.query
-  local items = copy_list(self.collected, n)
+  local items = self:match_input(matcher, query, n)
   local results = {}
   local started = self.scheduler:now()
   self.processing = true
@@ -354,6 +354,38 @@ function Picker:request_match(restart)
       self:notify("status")
     end,
   })
+end
+
+---The items to match `query` against: what the last match let through when
+---the matcher says `query` only narrows it and that match saw every item, in
+---collection order so the result is the one a full match gives; else every item.
+---@param matcher lese.Matcher
+---@param query string
+---@param n integer  -- items collected so far
+---@return lese.Item[]
+function Picker:match_input(matcher, query, n)
+  local previous = self.matched_query
+  if
+    not matcher.narrows
+    or matcher.incremental
+    or previous == nil
+    or self.matched_count ~= n
+    or not matcher.narrows(previous, query)
+  then
+    return copy_list(self.collected, n)
+  end
+  local kept = {}
+  for _, item in ipairs(self.matched) do
+    kept[item.id] = true
+  end
+  local items = {}
+  for i = 1, n do
+    local item = self.collected[i]
+    if kept[item.id] then
+      items[#items + 1] = item
+    end
+  end
+  return items
 end
 
 -- While items are still arriving, matching again on every chunk would compete

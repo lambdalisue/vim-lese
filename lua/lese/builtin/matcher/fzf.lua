@@ -435,6 +435,26 @@ end
 ---@field ignore_case? boolean    -- always ignore case; by default a term with an upper-case letter respects case
 ---@field sort? boolean           -- order by score (default true); false keeps the input order
 
+---True when `query` can only let through items `previous` let through: it
+---extends `previous`, has no OR, and does not lengthen a negated term (which
+---would let more through) or a term anchored at the end (which would change
+---what it anchors).
+---@param previous string
+---@param query string
+---@return boolean
+local function narrows(previous, query)
+  if query:sub(1, #previous) ~= previous or query:find("|", 1, true) then
+    return false
+  end
+  local last = previous:match("[^" .. SPACE .. "]*$")
+  local extends_last = last ~= ""
+    and query:sub(#previous + 1, #previous + 1):find("^[^" .. SPACE .. "]")
+  if extends_last and (last:sub(1, 1) == "!" or last:sub(-1) == "$") then
+    return false
+  end
+  return true
+end
+
 ---@param opts? lese.builtin.matcher.FzfOptions
 ---@return lese.Matcher
 return function(opts)
@@ -443,6 +463,7 @@ return function(opts)
   local sort = opts.sort ~= false
   return define.matcher({
     name = "builtin.matcher.fzf",
+    narrows = narrows,
     match = function(ctx, params)
       local items = params.items
       local groups = parse_query(params.query, casing)

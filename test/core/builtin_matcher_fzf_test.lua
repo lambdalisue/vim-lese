@@ -219,3 +219,61 @@ t.describe("builtin.matcher.fzf", function()
     t.ok(elapsed < 1, string.format("took %.3f s", elapsed))
   end)
 end)
+
+t.describe("builtin.matcher.fzf narrows", function()
+  local narrows = require("lese.builtin").matcher.fzf().narrows
+  local ok = assert(narrows, "fzf declares narrows")
+
+  t.it("holds when the query lengthens a term or adds one", function()
+    t.eq(ok("ab", "abc"), true)
+    t.eq(ok("ab", "ab cd"), true)
+    t.eq(ok("'ab", "'abc"), true)
+    t.eq(ok("^ab", "^abc"), true)
+    t.eq(ok("ab$", "ab$ c"), true)
+    t.eq(ok("", "a"), true)
+  end)
+
+  t.it("does not hold when the query does not extend the previous one", function()
+    t.eq(ok("abc", "ab"), false)
+    t.eq(ok("ab", "xb"), false)
+  end)
+
+  t.it("does not hold for a lengthened negation, end anchor, or an OR", function()
+    t.eq(ok("!ab", "!abc"), false)
+    t.eq(ok("ab$", "ab$c"), false)
+    t.eq(ok("ab", "ab | cd"), false)
+  end)
+
+  t.it("gives the same result on the last result as on every item", function()
+    local matcher = require("lese.builtin").matcher.fzf()
+    local words = { "init", "lua", "lese", "core", "picker", "test", "vim", "nvim", "LSP", "Lsp" }
+    local items = {}
+    local seed = 7
+    for i = 1, 400 do
+      local parts = {}
+      for k = 1, 3 do
+        seed = (seed * 75 + 74) % 65537
+        parts[k] = words[seed % #words + 1]
+      end
+      items[i] = { id = i, value = table.concat(parts, "/"), detail = {} }
+    end
+    local previous, last = "", items
+    for _, query in ipairs({ "l", "li", "lin", "lin ", "lin i", "lin in", "lin ini" }) do
+      local full = t.match(matcher, { query = query, items = items })
+      if matcher.narrows(previous, query) then
+        local kept = {}
+        for _, item in ipairs(last) do
+          kept[item.id] = true
+        end
+        local subset = {}
+        for _, item in ipairs(items) do
+          if kept[item.id] then
+            subset[#subset + 1] = item
+          end
+        end
+        t.eq(t.values(t.match(matcher, { query = query, items = subset })), t.values(full), query)
+      end
+      previous, last = query, full
+    end
+  end)
+end)

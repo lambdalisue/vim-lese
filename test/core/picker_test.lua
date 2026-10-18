@@ -306,6 +306,43 @@ t.describe("picker", function()
     s:drain()
   end)
 
+  t.it(
+    "matches only what the last query let through when the matcher says the query narrows",
+    function()
+      local seen = {}
+      local narrowing = define.matcher({
+        name = "test.narrowing",
+        narrows = function(previous, query)
+          return query:sub(1, #previous) == previous
+        end,
+        match = function(ctx, params)
+          seen[#seen + 1] = #params.items
+          for _, item in ipairs(params.items) do
+            if string.find(item.value, params.query, 1, true) then
+              ctx:emit(item)
+            end
+          end
+        end,
+      })
+      local picker, s = new({
+        source = list_source({ "apple", "apricot", "banana", "cherry" }),
+        matchers = { narrowing },
+      })
+      picker:start()
+      s:drain()
+      picker:set_query("a")
+      s:drain()
+      picker:set_query("ap")
+      s:drain()
+      picker:set_query("b")
+      s:drain()
+      t.eq(seen[#seen - 2], 4)
+      t.eq(seen[#seen - 1], 3)
+      t.eq(seen[#seen], 4)
+      t.eq(labels(picker), { "banana" })
+    end
+  )
+
   t.it("stops collecting at the threshold and says the list is truncated", function()
     local picker, s = new({ source = list_source({ "a", "b", "c" }), threshold = 2 })
     picker:start()

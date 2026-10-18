@@ -76,6 +76,9 @@
 ---Emits the items of `params.items` that match `params.query`, as copies when it adds decorations.
 ---@field match fun(ctx: lese.Context, params: lese.MatchParams)
 ---@field incremental? boolean  -- show results while matching (curators)
+---True when every item `query` lets through is one `previous` let through, so the picker may match
+---only the last results; leave it out when unsure.
+---@field narrows? fun(previous: string, query: string): boolean
 
 ---Reorders the filtered items.
 ---@class lese.Sorter

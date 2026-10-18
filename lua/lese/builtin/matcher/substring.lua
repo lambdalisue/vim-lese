@@ -25,6 +25,10 @@ return function(opts)
   opts = opts or {}
   return define.matcher({
     name = "builtin.matcher.substring",
+    -- More text in a term, or another term, can only keep fewer items.
+    narrows = function(previous, query)
+      return query:sub(1, #previous) == previous
+    end,
     match = function(ctx, params)
       local query = params.query
       local ignore_case = opts.ignore_case or (opts.smart_case and not find(query, "[A-Z]"))

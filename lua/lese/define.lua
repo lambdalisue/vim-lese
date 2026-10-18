@@ -58,9 +58,10 @@ function M.curator(def)
 end
 
 ---Define a matcher: `match(ctx, { query, items })` emits the matching items, as copies when it adds
----decorations. `incremental = true` shows results while it runs. In strict mode every emitted item
+---decorations. `incremental = true` shows results while it runs. `narrows(previous, query)` returning
+---true lets the picker match only what `previous` let through. In strict mode every emitted item
 ---is checked. `name` is required.
----@param def { name: string, match: fun(ctx: lese.Context, params: lese.MatchParams), incremental?: boolean }
+---@param def { name: string, match: fun(ctx: lese.Context, params: lese.MatchParams), incremental?: boolean, narrows?: fun(previous: string, query: string): boolean }
 ---@return lese.Matcher
 function M.matcher(def)
   contract.definition("matcher", def, "match")
@@ -68,6 +69,7 @@ function M.matcher(def)
   return {
     name = def.name,
     incremental = def.incremental,
+    narrows = def.narrows,
     match = function(ctx, params)
       if contract.strict then
         return match(checked_emit(ctx, "matcher", def.name), params)
