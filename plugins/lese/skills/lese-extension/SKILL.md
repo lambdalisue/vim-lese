@@ -36,6 +36,10 @@ ordinary plugin; you cannot open its UI, so you prove it works with tests and
   `system()`.
 - Modules that take options are functions returning the module; users always
   call them.
+- Describe everything users can reach, for lua-language-server: a `---`
+  line on every public function, class and `---@field`. Declare the table
+  `require("lese-<name>")` returns as a class with a described field per
+  module.
 - Extensions add no picker by themselves. Offer
   `require("lese-<name>").define_pickers(x)` for users to call from their
   custom.lua.
