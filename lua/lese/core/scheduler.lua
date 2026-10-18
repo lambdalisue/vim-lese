@@ -229,6 +229,12 @@ function Scheduler:run_until(done, opts)
   return true
 end
 
+---The scheduler's clock, in milliseconds.
+---@return number
+function Scheduler:now()
+  return self.clock()
+end
+
 ---True while a task is ready to run.
 ---@return boolean
 function Scheduler:ready()

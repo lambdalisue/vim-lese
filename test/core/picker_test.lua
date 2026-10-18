@@ -219,6 +219,46 @@ t.describe("picker", function()
     t.eq(picker.preview, { content = { "preview of a" } })
   end)
 
+  t.it("waits between matches while items are still arriving, then matches them all", function()
+    local now = 0
+    local s = scheduler_mod.new({
+      budget = 1,
+      clock = function()
+        return now
+      end,
+    })
+    local runs = 0
+    local counting = define.matcher({
+      name = "test.counting",
+      match = function(ctx, params)
+        runs = runs + 1
+        for _, item in ipairs(params.items) do
+          ctx:emit(item)
+        end
+      end,
+    })
+    local source = define.source({
+      name = "test.slow",
+      collect = function(ctx)
+        for i = 1, 200 do
+          ctx:emit({ id = i, value = tostring(i), detail = {} })
+          now = now + 1
+          ctx:checkpoint()
+        end
+      end,
+    })
+    local picker = picker_mod.new({
+      name = "test",
+      source = source,
+      matchers = { counting },
+      scheduler = s,
+    })
+    picker:start()
+    s:drain()
+    t.eq(#picker.filtered, 200)
+    t.ok(runs <= 4, "matched " .. runs .. " times for 200 chunks")
+  end)
+
   t.it("stops collecting at the threshold and says the list is truncated", function()
     local picker, s = new({ source = list_source({ "a", "b", "c" }), threshold = 2 })
     picker:start()

@@ -75,6 +75,10 @@ local M = {}
 ---@field package matched_query? string
 ---@field package matched_count integer
 ---@field package previewed? lese.Item
+---@field package match_ended? number
+---@field package match_cost? number
+---@field package retry_pending? boolean
+---@field package disposed? boolean
 local Picker = {}
 Picker.__index = Picker
 
@@ -298,6 +302,10 @@ function Picker:request_match(restart)
     self.match_dirty = true
     return
   end
+  if not restart and self.collecting == true and self:cooling() then
+    self.match_dirty = true
+    return
+  end
   local n = #self.collected
   if not self.tasks.match and self.query == self.matched_query and n == self.matched_count then
     return
@@ -307,6 +315,7 @@ function Picker:request_match(restart)
   local query = self.query
   local items = copy_list(self.collected, n)
   local results = {}
+  local started = self.scheduler:now()
   self.processing = true
   self:notify("status")
   self:run("match", matcher.name, function()
@@ -325,8 +334,15 @@ function Picker:request_match(restart)
       self.matched = results
       self.matched_query = query
       self.matched_count = n
+      local now = self.scheduler:now()
+      self.match_ended = now
+      self.match_cost = now - started
       if self.match_dirty then
-        self:request_match(false)
+        if self.collecting == true then
+          self:retry_match()
+        else
+          self:request_match(false)
+        end
       end
       self:request_sort()
     end,
@@ -335,6 +351,37 @@ function Picker:request_match(restart)
       self:notify("status")
     end,
   })
+end
+
+-- While items are still arriving, matching again on every chunk would compete
+-- with collecting and grow with the square of the items; a new match waits
+-- twice as long as the last one took, and at least as long as fall waited.
+local MATCH_COOLDOWN = 100
+
+---True while a match that would only add arrived items should wait.
+---@return boolean
+function Picker:cooling()
+  if not self.match_ended then
+    return false
+  end
+  local wait = math.max(MATCH_COOLDOWN, 2 * (self.match_cost or 0))
+  return self.scheduler:now() - self.match_ended < wait
+end
+
+---Match the items that arrived during the cooldown once it is over, even when
+---the source stays quiet until then.
+function Picker:retry_match()
+  if not self.host or self.retry_pending then
+    return
+  end
+  self.retry_pending = true
+  local wait = math.max(MATCH_COOLDOWN, 2 * (self.match_cost or 0))
+  self.host.defer(math.ceil(wait), function()
+    self.retry_pending = false
+    if self.match_dirty and not self.disposed then
+      self:request_match(false)
+    end
+  end)
 end
 
 ---Sort what was matched, then render it.
@@ -651,6 +698,7 @@ end
 
 ---Cancel every stage.
 function Picker:dispose()
+  self.disposed = true
   for _, task in pairs(self.tasks) do
     task:cancel()
   end
