@@ -81,6 +81,31 @@ t.describe("t.picker", function()
   end)
 end)
 
+t.describe("a module that never checkpoints", function()
+  t.it("is reported with whole milliseconds", function()
+    local contract = require("lese.core.contract")
+    local warned = {}
+    local saved = contract.warn
+    ---@diagnostic disable-next-line: duplicate-set-field
+    contract.warn = function(message)
+      warned[#warned + 1] = message
+    end
+    local ok, err = pcall(t.run, "test.busy", function()
+      local stop, spins = os.clock() + 0.08, 0
+      while os.clock() < stop do
+        spins = spins + 1
+      end
+      return spins
+    end)
+    contract.warn = saved
+    t.ok(ok, tostring(err))
+    t.ok(
+      warned[1] and warned[1]:find("test.busy ran %d+ ms without ctx:checkpoint"),
+      tostring(warned[1])
+    )
+  end)
+end)
+
 t.describe("screen.mark", function()
   t.it("merges touching decorations into one bracket", function()
     t.eq(

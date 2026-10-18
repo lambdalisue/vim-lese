@@ -67,7 +67,7 @@ function M.new(params)
   self.scheduler = scheduler_mod.new({
     on_starve = function(task, elapsed)
       contract.warn(
-        string.format("lese: %s ran %d ms without ctx:checkpoint()", task.name, elapsed)
+        string.format("lese: %s ran %d ms without ctx:checkpoint()", task.name, math.floor(elapsed))
       )
     end,
   })

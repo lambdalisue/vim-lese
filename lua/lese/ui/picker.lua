@@ -94,7 +94,7 @@ function M.new(params)
           string.format(
             "%s ran %d ms without ctx:checkpoint(), freezing the editor",
             task.name,
-            elapsed
+            math.floor(elapsed)
           )
         )
       end
