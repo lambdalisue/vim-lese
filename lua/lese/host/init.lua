@@ -143,6 +143,27 @@ function M.emit(pattern)
   impl.cmd("doautocmd <nomodeline> User " .. pattern)
 end
 
+---Turn a value Vim script handed to Lua (`_A` of luaeval()) into plain Lua.
+---@param value any
+---@return any
+function M.import(value)
+  if impl.from_vim then
+    return impl.from_vim(value)
+  end
+  return value
+end
+
+---Turn a Lua value into one Vim script receives as a List or Dict when it is
+---returned from luaeval().
+---@param value any
+---@return any
+function M.export(value)
+  if impl.to_vim then
+    return impl.to_vim(value)
+  end
+  return value
+end
+
 -- Lua functions Vim script calls back through lese#internal#invoke().
 local callbacks = {}
 local next_callback = 0
@@ -166,15 +187,12 @@ end
 ---@param args any[]
 ---@return any
 function M.invoke(id, args)
-  local key, values = id, args ---@type any, any
-  if impl.from_vim then
-    key, values = impl.from_vim(id), impl.from_vim(args)
-  end
+  local key, values = M.import(id), M.import(args)
   local callback = callbacks[key]
   if not callback then
     return nil
   end
-  return callback(require("lese.core.compat").unpack(values or {}))
+  return M.export(callback(require("lese.core.compat").unpack(values or {})))
 end
 
 ---A floating window (Neovim) or a popup (Vim) that never takes focus.

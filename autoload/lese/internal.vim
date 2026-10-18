@@ -50,3 +50,8 @@ function! lese#internal#defer(ms, id) abort
   let l:id = a:id
   return timer_start(a:ms, { _ -> lese#internal#invoke(l:id) })
 endfunction
+
+" Hand a picker event (from a <Plug> mapping) to the picker that is open.
+function! lese#internal#dispatch(event) abort
+  call luaeval('require("lese.ui.event").dispatch(_A)', a:event)
+endfunction

@@ -8,8 +8,13 @@ M.name = "nvim"
 local uv = vim.uv or vim.loop
 local ns = vim.api.nvim_create_namespace("lese")
 
+-- v:null arrives as vim.NIL; Vim gives nil, so nil it is on both.
 function M.call(name, ...)
-  return vim.call(name, ...)
+  local result = vim.call(name, ...)
+  if result == vim.NIL then
+    return nil
+  end
+  return result
 end
 
 function M.cmd(command)
