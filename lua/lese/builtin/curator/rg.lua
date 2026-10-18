@@ -101,6 +101,8 @@ return function(opts)
       for _, arg in ipairs(args) do
         cmd[#cmd + 1] = arg
       end
+      -- -e keeps a query that starts with - from reading as an option.
+      cmd[#cmd + 1] = "-e"
       cmd[#cmd + 1] = params.query
       cmd[#cmd + 1] = "--"
       cmd[#cmd + 1] = base

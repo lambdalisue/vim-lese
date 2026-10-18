@@ -137,6 +137,22 @@ t.describe("ctx:spawn", function()
     t.eq(t.values(emitted), { "a", "b" })
   end)
 
+  t.it("kills the command when an output handler fails", function()
+    local host, job = fake_host()
+    local s, task = run(function(ctx)
+      ctx:spawn({ "cmd" }, {
+        on_stdout = function()
+          error("parse error")
+        end,
+      })
+    end, host)
+    s:drain()
+    job.opts.on_stdout("a")
+    s:drain()
+    t.eq(task.status, "failed")
+    t.eq(job.killed, true)
+  end)
+
   t.it("kills the command when cancelled", function()
     local host, job = fake_host()
     local s, task = run(function(ctx)

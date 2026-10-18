@@ -1,6 +1,5 @@
 -- The inside of bin/lese-run: run a picker from custom.lua headlessly and
--- print what it shows. Arguments arrive in LESE_RUN_ARGS, one per line, so no
--- shell quoting reaches Vim script.
+-- print what it shows.
 
 local host = require("lese.host")
 local contract = require("lese.core.contract")
@@ -127,7 +126,7 @@ function M.run(opts)
       0
     )
   end
-  local built = definition.build()
+  local built = definition.build(opts.args)
   local driver = driver_mod.new({
     name = definition.name,
     source = built.source,
@@ -223,11 +222,41 @@ function M.run(opts)
   return table.concat(lines, "\n"), ok
 end
 
+---Read the NUL-separated arguments bin/lese-run wrote, empty ones included.
+---@param path? string
+---@return string[]
+function M.read_args(path)
+  local argv = {}
+  local file = path and io.open(path, "rb")
+  if not file then
+    return argv
+  end
+  local data = file:read("*a")
+  file:close()
+  local start = 1
+  while start <= #data do
+    local stop = data:find("\0", start, true)
+    if not stop then
+      argv[#argv + 1] = data:sub(start)
+      break
+    end
+    argv[#argv + 1] = data:sub(start, stop - 1)
+    start = stop + 1
+  end
+  return argv
+end
+
 ---Entry point for bin/lese-run: print the output and quit with its status.
 function M.main()
-  local argv = {}
-  for line in string.gmatch(os.getenv("LESE_RUN_ARGS") or "", "[^\n]+") do
-    argv[#argv + 1] = line
+  local argv = M.read_args(os.getenv("LESE_RUN_ARGS_FILE"))
+  for _, arg in ipairs(argv) do
+    if arg == "-h" or arg == "--help" then
+      local out = io.stdout
+      out:write(M.USAGE, "\n")
+      out:flush()
+      host.cmd("qall!")
+      return
+    end
   end
   local out = io.stdout
   local ok, output, success = pcall(function()

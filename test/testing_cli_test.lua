@@ -1,0 +1,17 @@
+local t = require("lese.testing")
+local host = require("lese.host")
+local cli = require("lese.testing.cli")
+
+t.describe("lese.testing.cli", function()
+  t.it("reads NUL-separated arguments, keeping empty ones", function()
+    local path = host.fn.tempname()
+    local file = assert(io.open(path, "wb"))
+    file:write("file\0--query\0\0a\nb\0")
+    file:close()
+    t.eq(cli.read_args(path), { "file", "--query", "", "a\nb" })
+  end)
+
+  t.it("takes an empty query", function()
+    t.eq(cli.parse({ "file", "--query", "" }).query, "")
+  end)
+end)

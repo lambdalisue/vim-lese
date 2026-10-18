@@ -140,7 +140,7 @@ end
 ---Fire a `User` autocmd.
 ---@param pattern string
 function M.emit(pattern)
-  impl.cmd("doautocmd <nomodeline> User " .. pattern)
+  impl.call("lese#internal#emit", pattern)
 end
 
 ---Turn a value Vim script handed to Lua (`_A` of luaeval()) into plain Lua.

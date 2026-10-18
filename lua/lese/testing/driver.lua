@@ -98,21 +98,14 @@ end
 ---@return lese.Driver
 function Driver:wait()
   local s = self.scheduler
-  local deadline = os.time() + math.ceil((self.params.timeout or 10000) / 1000)
-  while true do
+  local settled = require("lese.testing").settle(s, function()
+    return not s:busy()
+  end, self.params.timeout)
+  if not settled then
+    local running = self:running()
+    self.model:dispose()
     s:drain()
-    if not s:busy() then
-      break
-    end
-    if not self.host then
-      error("the picker waits on the editor, which a bare Lua does not have", 2)
-    end
-    if os.time() > deadline then
-      error("the picker did not settle in time; still running: " .. self:running(), 2)
-    end
-    self.host.wait(10, function()
-      return s:ready()
-    end)
+    error("the picker did not settle in time; still running: " .. running, 2)
   end
   return self
 end
@@ -265,16 +258,13 @@ function Driver:invoke(name)
       self.model:result()
     )
   end, { name = name })
-  while not task:finished() do
+  local done = require("lese.testing").settle(s, function()
+    return task:finished()
+  end, self.params.timeout)
+  if not done then
+    task:cancel()
     s:drain()
-    if not task:finished() then
-      if not self.host then
-        error("the action waits on the editor, which a bare Lua does not have", 2)
-      end
-      self.host.wait(10, function()
-        return task.status == "ready"
-      end)
-    end
+    error(string.format("action '%s' did not finish in time", name), 2)
   end
   if task.status == "failed" then
     error(task.traceback or tostring(task.error), 0)

@@ -48,14 +48,9 @@ local function invoke(name, action, params)
   local task = s:spawn(function()
     result = action.invoke(context.new({ scheduler = s, host = host, name = name }), params)
   end, { name = name })
-  while not task:finished() do
-    s:drain()
-    if not task:finished() then
-      host.wait(10, function()
-        return task.status == "ready"
-      end)
-    end
-  end
+  s:run_until(function()
+    return task:finished()
+  end, { now = host.now, wait = host.wait })
   if task.status == "failed" then
     error(task.traceback or tostring(task.error), 0)
   end
@@ -75,7 +70,7 @@ end
 function M.start(definition, opts)
   opts = opts or {}
   local setting = custom.setting()
-  local built = definition.build()
+  local built = definition.build(opts.args or {})
   local saved = opts.context
   local item_picker = ui_picker.new({
     name = definition.name,

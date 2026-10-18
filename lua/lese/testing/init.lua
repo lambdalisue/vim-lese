@@ -128,27 +128,36 @@ function M.run(name, fn, opts)
   local task = s:spawn(function()
     result = fn(ctx)
   end, { name = name })
-  local deadline = os.time() + math.ceil((opts.timeout or 10000) / 1000)
-  while true do
+  local done = M.settle(s, function()
+    return task:finished()
+  end, opts.timeout)
+  if not done then
+    task:cancel()
     s:drain()
-    if task:finished() then
-      break
-    end
-    if not host then
-      error(name .. " waits on the editor, which a bare Lua does not have", 2)
-    end
-    if os.time() > deadline then
-      task:cancel()
-      error(name .. " did not finish in time", 2)
-    end
-    host.wait(10, function()
-      return not task:finished() and task.status == "ready"
-    end)
+    error(name .. " did not finish in time", 2)
   end
   if task.status == "failed" then
     error(task.traceback or tostring(task.error), 0)
   end
   return emitted, result
+end
+
+---Run `s` until `done()` holds or `timeout` (milliseconds, default 10000)
+---passes, letting the editor handle its events between ticks. Returns false on
+---timeout.
+---@param s lese.Scheduler
+---@param done fun(): boolean
+---@param timeout? number
+---@return boolean
+function M.settle(s, done, timeout)
+  local host = current_host()
+  return s:run_until(done, {
+    now = host and host.now or function()
+      return os.clock() * 1000
+    end,
+    wait = host and host.wait or nil,
+    timeout = timeout or 10000,
+  })
 end
 
 ---Drive a whole picker headlessly: `t.picker({ source = ... }):type("q"):screen()`.
@@ -168,8 +177,8 @@ end
 
 ---Compare `text` with the snapshot stored for the running test under
 ---`__snapshots__/` next to the test file, writing it when there is none or when
----LESE_UPDATE_SNAPSHOTS=1 (`just snapshot`). Every host compares with the same
----snapshot.
+---LESE_UPDATE_SNAPSHOTS=1 (`just snapshot`); under CI a missing snapshot fails.
+---Every host compares with the same snapshot.
 ---@param text string
 ---@param name? string  -- tells apart several snapshots in one test
 function M.snapshot(text, name)
@@ -198,6 +207,9 @@ function M.snapshot(text, name)
   end
   if file then
     file:close()
+  elseif os.getenv("CI") and not update then
+    -- A snapshot that is never committed would pass on every CI run.
+    fail("snapshot " .. path .. " does not exist; run `just snapshot` and commit it", 2)
   end
   if compat.in_editor() then
     require("lese.host").fn.mkdir(dir, "p")

@@ -339,7 +339,9 @@ function Picker:render_preview()
     "silent! setlocal buftype=nofile bufhidden=wipe nobuflisted noswapfile nomodifiable nowrap cursorline cursorlineopt=number,line"
   )
   window:execute(string.format("silent! normal! %dG%d|", item.line or 1, item.column or 1))
-  window:execute("silent! doautocmd <nomodeline> User LesePreviewRendered:" .. filename)
+  window:execute(
+    "silent! call lese#internal#emit(" .. host.fn.string("LesePreviewRendered:" .. filename) .. ")"
+  )
   return true
 end
 

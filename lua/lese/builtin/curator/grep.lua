@@ -28,6 +28,8 @@ return function(opts)
         "--no-messages",
         "--recursive",
         "--line-number",
+        -- -e keeps a query that starts with - from reading as an option.
+        "-e",
         params.query,
         "--",
         base,

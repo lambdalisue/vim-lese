@@ -69,6 +69,62 @@ t.describe("custom.lua", function()
     end, "has no action 'open' to use as 'default_action'")
   end)
 
+  t.it("keeps the pickers it had when a reload fails halfway", function()
+    local builtin = require("lese.builtin")
+    local function declare(x, name)
+      x.define_picker_from_source(name, builtin.source.noop(), {
+        matchers = { builtin.matcher.fzf() },
+        actions = { echo = builtin.action.echo() },
+        default_action = "echo",
+      })
+    end
+    load(function(x)
+      declare(x, "old")
+    end)
+    t.raises(function()
+      load(function(x)
+        declare(x, "new")
+        error("broken halfway")
+      end)
+    end, "broken halfway")
+    t.eq(custom.names(), { "old" })
+  end)
+
+  t.it("loads a module again after a reload that failed once it was loaded", function()
+    local version = 1
+    package.preload["lese_custom_test_ext"] = function()
+      return { version = version }
+    end
+    t.raises(function()
+      load(function()
+        require("lese_custom_test_ext")
+        error("broken after the require")
+      end)
+    end, "broken after the require")
+    version = 2
+    local seen
+    custom.load({ reload = true, path = custom.default_path() })
+    load(function()
+      seen = require("lese_custom_test_ext").version
+    end)
+    t.eq(seen, 2)
+    package.preload["lese_custom_test_ext"] = nil
+    package.loaded["lese_custom_test_ext"] = nil
+  end)
+
+  t.it("hands a curator picker its arguments even when nothing is collected", function()
+    local seen
+    local curator = require("lese.define").curator({
+      name = "test.curator",
+      curate = function(_, params)
+        seen = params.args
+      end,
+    })
+    local _, matcher = custom.curator_pipeline(curator, { "/target" })
+    t.match(matcher, { query = "q", items = {} })
+    t.eq(seen, { "/target" })
+  end)
+
   t.it("loads g:lese_custom_path and keeps it when a reload fails", function()
     local dir = host.fn.tempname()
     host.fn.mkdir(dir, "p")

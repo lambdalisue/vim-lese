@@ -8,6 +8,7 @@ local define = require("lese.define")
 
 ---@class lese.builtin.previewer.FileOptions
 ---@field limit? integer -- lines read from the top, default 10000; more when detail.line is beyond
+---@field max_bytes? integer -- larger files are not read, default 10 MiB
 
 local BINARY = "No preview for binary file is available."
 
@@ -17,6 +18,7 @@ local BINARY = "No preview for binary file is available."
 return function(opts)
   opts = opts or {}
   local limit = opts.limit or 10000
+  local max_bytes = opts.max_bytes or 10 * 1024 * 1024
 
   return define.previewer({
     name = "builtin.previewer.file",
@@ -26,6 +28,13 @@ return function(opts)
       local abspath = fn.fnamemodify(detail.preview_path or detail.path, ":p")
       if fn.filereadable(abspath) ~= 1 then
         return { content = { "Cannot read " .. abspath } }
+      end
+      -- readfile() blocks on a FIFO or a device, and counts lines, not bytes.
+      if fn.getftype(fn.resolve(abspath)) ~= "file" then
+        return { content = { "No preview for " .. abspath .. ", which is not a regular file." } }
+      end
+      if fn.getfsize(abspath) > max_bytes then
+        return { content = { "No preview for " .. abspath .. ", which is too large." } }
       end
       local max = limit
       if detail.line and detail.line > max then

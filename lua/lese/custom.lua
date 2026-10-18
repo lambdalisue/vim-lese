@@ -7,7 +7,7 @@ local M = {}
 
 ---@class lese.PickerDefinition
 ---@field name string
----@field build fun(): { source: lese.Source, matchers: lese.Matcher[] }  -- fresh per picker
+---@field build fun(args: string[]): { source: lese.Source, matchers: lese.Matcher[] }  -- fresh per picker
 ---@field sorters lese.Sorter[]
 ---@field renderers lese.Renderer[]
 ---@field previewers lese.Previewer[]
@@ -109,16 +109,15 @@ local function register(name, build, params)
 end
 
 ---A curator searched once per query, as the only matcher of its picker.
+---The arguments are bound here, since a resumed picker collects nothing.
 ---@param curator lese.Curator
+---@param args string[]
 ---@return lese.Source source
 ---@return lese.Matcher matcher
-function M.curator_pipeline(curator)
-  local args = {}
+function M.curator_pipeline(curator, args)
   local source = define.source({
     name = curator.name,
-    collect = function(_, params)
-      args = params.args
-    end,
+    collect = function() end,
   })
   local matcher = define.matcher({
     name = curator.name,
@@ -151,8 +150,8 @@ local entrypoint = {
       error(string.format("lese: picker '%s' needs a curator", name), 2)
     end
     validate_actions(name, params)
-    register(name, function()
-      local source, matcher = M.curator_pipeline(curator)
+    register(name, function(args)
+      local source, matcher = M.curator_pipeline(curator, args)
       return { source = source, matchers = { matcher } }
     end, params)
   end,
@@ -172,24 +171,46 @@ local entrypoint = {
   end,
 }
 
+local function declare(chunk)
+  local main = chunk()
+  if type(main) ~= "function" then
+    error("lese: custom.lua must return a function that takes the entrypoint", 0)
+  end
+  -- Declare into a fresh registry and keep it only when the whole file ran, so
+  -- a broken reload leaves the pickers that worked before.
+  local saved = {
+    setting = state.setting,
+    action_picker = state.action_picker,
+    pickers = state.pickers,
+    order = state.order,
+  }
+  reset()
+  local ok, err = pcall(main, entrypoint)
+  if not ok then
+    state.setting = saved.setting
+    state.action_picker = saved.action_picker
+    state.pickers = saved.pickers
+    state.order = saved.order
+    error(err, 0)
+  end
+end
+
 ---Run a custom.lua chunk, recording the modules it loads so a reload can
----load them afresh.
+---load them afresh, whether or not this run succeeds.
 ---@param chunk fun(): any
 local function run(chunk)
   local before = {}
   for name in pairs(package.loaded) do
     before[name] = true
   end
-  local main = chunk()
-  if type(main) ~= "function" then
-    error("lese: custom.lua must return a function that takes the entrypoint", 0)
-  end
-  reset()
-  main(entrypoint)
+  local ok, err = pcall(declare, chunk)
   for name in pairs(package.loaded) do
     if not before[name] and not name:match("^lese%.") and name ~= "lese" then
       state.modules[name] = true
     end
+  end
+  if not ok then
+    error(err, 0)
   end
 end
 

@@ -29,11 +29,6 @@ return function()
       local items = {}
       for i, entry in ipairs(ctx.host.fn.getqflist()) do
         ctx:checkpoint()
-        local length = (entry.end_col or 0) - entry.col
-        local decorations = {}
-        if entry.col >= 1 and length > 0 then
-          decorations[1] = { column = entry.col, length = length }
-        end
         -- user_data may hold any Vim value; it is not part of the detail.
         entry.user_data = nil
         items[i] = {
@@ -45,7 +40,6 @@ return function()
             column = entry.col,
             quickfix = entry,
           },
-          decorations = decorations,
         }
       end
       ctx:emit(items)

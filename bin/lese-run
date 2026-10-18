@@ -1,48 +1,48 @@
 #!/bin/sh
 # Run a lese picker headlessly and print what it shows. `lese-run --help` for
 # the options; everything but --host and --rtp is read by lese.testing.cli.
+#
+# Arguments reach the editor through a file, NUL-separated, and directories
+# through environment variables, so no shell or Ex quoting is involved.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 host=nvim
 rtp=""
-args=""
 nl='
 '
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+args="$tmp/args"
+: >"$args"
+
+add_rtp() {
+  dir=$(CDPATH= cd -- "$1" && pwd)
+  rtp="$rtp$dir$nl"
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --host=*) host=${1#--host=} ;;
     --host) shift; host=$1 ;;
-    --rtp=*) rtp="$rtp${nl}${1#--rtp=}" ;;
-    --rtp) shift; rtp="$rtp${nl}$1" ;;
-    -h|--help)
-      LESE_RUN_ARGS="--help" "${LESE_NVIM:-nvim}" --headless --clean --cmd "set rtp^=$root" \
-        -c 'lua io.stdout:write(require("lese.testing.cli").USAGE, "\n")' -c 'qall!' </dev/null
-      exit 0 ;;
-    *) args="$args${nl}$1" ;;
+    --rtp=*) add_rtp "${1#--rtp=}" ;;
+    --rtp) shift; add_rtp "$1" ;;
+    *) printf '%s\0' "$1" >>"$args" ;;
   esac
   shift
 done
 
-rtp_cmd() {
-  printf 'set rtp^=%s' "$root"
-  printf '%s\n' "$rtp" | while IFS= read -r dir; do
-    [ -n "$dir" ] || continue
-    dir=$(CDPATH= cd -- "$dir" && pwd)
-    printf ' | set rtp^=%s' "$dir"
-  done
-}
+# Put lese, then each --rtp directory, in front of 'runtimepath'.
+setup='let &rtp = escape($LESE_RUN_ROOT, ",") . "," . &rtp | for g:lese_run_dir in split($LESE_RUN_RTP, "\n") | let &rtp = escape(g:lese_run_dir, ",") . "," . &rtp | endfor'
 
 run() {
-  cmd=$(rtp_cmd)
   case "$1" in
     nvim)
-      LESE_RUN_ARGS=$args "${LESE_NVIM:-nvim}" --headless --clean \
-        --cmd "$cmd" -c 'lua require("lese.testing.cli").main()' </dev/null ;;
+      LESE_RUN_ROOT=$root LESE_RUN_RTP=$rtp LESE_RUN_ARGS_FILE=$args "${LESE_NVIM:-nvim}" --headless --clean \
+        --cmd "$setup" -c 'lua require("lese.testing.cli").main()' </dev/null ;;
     vim)
-      LESE_RUN_ARGS=$args "${LESE_VIM:-vim}" -Nu NONE -i NONE -es \
-        --cmd "$cmd" -c 'lua require("lese.testing.cli").main()' </dev/null ;;
+      LESE_RUN_ROOT=$root LESE_RUN_RTP=$rtp LESE_RUN_ARGS_FILE=$args "${LESE_VIM:-vim}" -Nu NONE -i NONE -es \
+        --cmd "$setup" -c 'lua require("lese.testing.cli").main()' </dev/null ;;
     *)
       echo "lese-run: unknown host '$1' (nvim, vim or both)" >&2
       return 2 ;;
@@ -51,8 +51,6 @@ run() {
 
 case "$host" in
   both)
-    tmp=$(mktemp -d)
-    trap 'rm -rf "$tmp"' EXIT
     status=0
     run nvim >"$tmp/nvim" 2>&1 || status=$?
     run vim >"$tmp/vim" 2>&1 || status=$?

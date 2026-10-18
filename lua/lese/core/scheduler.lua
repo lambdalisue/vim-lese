@@ -113,7 +113,15 @@ end
 local function finish(task, status)
   task.status = status
   task.scheduler.waiting[task] = nil
+  local hooks = task.hooks
   task.hooks = {}
+  -- A failed task leaves what it started (a command) behind unless its hooks
+  -- release it, as a cancel would.
+  if status == "failed" then
+    for _, hook in ipairs(hooks) do
+      pcall(hook)
+    end
+  end
   local callback
   if status == "done" then
     callback = task.opts.on_done
@@ -182,6 +190,43 @@ function Scheduler:drain(max_ticks)
       return
     end
   end
+end
+
+---@class lese.RunUntilOptions
+---@field now fun(): number                 -- milliseconds
+---@field wait? fun(ms: number, condition?: fun(): boolean) -- process the editor's events
+---@field timeout? number                   -- milliseconds
+
+---Run ticks until `done()` holds, giving the editor (through `wait`) a turn
+---between ticks, so a long task neither freezes the editor nor outlives
+---`timeout`. Returns false on timeout. Without `wait`, a task that waits on
+---something outside the scheduler raises.
+---@param done fun(): boolean
+---@param opts lese.RunUntilOptions
+---@return boolean
+function Scheduler:run_until(done, opts)
+  local deadline = opts.now() + (opts.timeout or math.huge)
+  while not done() do
+    if opts.now() >= deadline then
+      return false
+    end
+    self:tick()
+    if not done() then
+      if opts.wait then
+        if self:ready() then
+          -- A ready task must not keep the editor from its timers and jobs.
+          opts.wait(1, nil)
+        else
+          opts.wait(10, function()
+            return self:ready()
+          end)
+        end
+      elseif not self:ready() then
+        error("a task waits on the editor, which a bare Lua does not have", 2)
+      end
+    end
+  end
+  return true
 end
 
 ---True while a task is ready to run.

@@ -55,3 +55,11 @@ endfunction
 function! lese#internal#dispatch(event) abort
   call luaeval('require("lese.ui.event").dispatch(_A)', a:event)
 endfunction
+
+" Fire `User {pattern}`. The pattern comes from file and picker names, so it is
+" escaped rather than pasted into an Ex command, where `|` would end it and
+" `"` start a comment.
+function! lese#internal#emit(pattern) abort
+  let l:pattern = substitute(a:pattern, '[\r\n]', ' ', 'g')
+  execute 'doautocmd <nomodeline> User' escape(l:pattern, '|"')
+endfunction

@@ -24,6 +24,8 @@ return function()
         "--no-heading",
         "--line-number",
         "--column",
+        -- -e keeps a query that starts with - from reading as an option.
+        "-e",
         params.query,
       }
       ctx:spawn(cmd, {

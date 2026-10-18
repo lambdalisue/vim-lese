@@ -191,6 +191,45 @@ t.describe("scheduler", function()
     t.eq(reports, { { "slow", 60 } })
   end)
 
+  t.it("runs ticks until done, handing the editor a turn between them", function()
+    local clock, advance = manual_clock()
+    local s = scheduler_mod.new({ budget = 1, clock = clock })
+    local steps, turns = 0, 0
+    local task = s:spawn(function()
+      for _ = 1, 3 do
+        steps = steps + 1
+        advance(1)
+        s:checkpoint()
+      end
+    end)
+    local done = s:run_until(function()
+      return task:finished()
+    end, {
+      now = clock,
+      wait = function()
+        turns = turns + 1
+      end,
+    })
+    t.eq(done, true)
+    t.eq(steps, 3)
+    t.ok(turns >= 2, "the editor got " .. turns .. " turns")
+  end)
+
+  t.it("gives up on run_until after the timeout even while the task checkpoints", function()
+    local clock, advance = manual_clock()
+    local s = scheduler_mod.new({ budget = 1, clock = clock })
+    s:spawn(function()
+      while true do
+        advance(1)
+        s:checkpoint()
+      end
+    end)
+    local done = s:run_until(function()
+      return false
+    end, { now = clock, wait = function() end, timeout = 50 })
+    t.eq(done, false)
+  end)
+
   t.it("ticks on its own through defer when given one", function()
     local deferred = {}
     local s = scheduler_mod.new({
