@@ -139,17 +139,19 @@ function Context:spawn(cmd, opts)
   if not task then
     error(self.name .. ": spawn() is called outside a module run", 2)
   end
-  local queue, head = {}, 1
+  local queue, head, tail = {}, 1, 0
   local code
   local job = self.host.spawn(cmd, {
     cwd = opts.cwd,
     env = opts.env,
     on_stdout = function(line)
-      queue[#queue + 1] = { opts.on_stdout, line }
+      tail = tail + 1
+      queue[tail] = { opts.on_stdout, line }
       scheduler:wake(task)
     end,
     on_stderr = function(line)
-      queue[#queue + 1] = { opts.on_stderr, line }
+      tail = tail + 1
+      queue[tail] = { opts.on_stderr, line }
       scheduler:wake(task)
     end,
     on_exit = function(c)
@@ -159,7 +161,7 @@ function Context:spawn(cmd, opts)
   })
   local remove = task:on_cancel(job.kill)
   while true do
-    while head <= #queue do
+    while head <= tail do
       local entry = queue[head]
       queue[head] = nil
       head = head + 1
