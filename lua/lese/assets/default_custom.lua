@@ -30,7 +30,8 @@ local quickfix_actions = merge(builtin.action.default_quickfix_actions, {
 
 local misc_actions = merge(
   builtin.action.default_echo_actions,
-  builtin.action.default_yank_actions
+  builtin.action.default_yank_actions,
+  builtin.action.default_submatch_actions
 )
 
 local EXCLUDED_FILES = {

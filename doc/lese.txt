@@ -863,14 +863,16 @@ renderer	nerdfont, smart_path, relative_path, absolute_path, helptag,
 		noop
 previewer	file, buffer, helptag, noop
 action		open, systemopen, cd, quickfix, buffer, cmd, echo, yank,
-		help, noop
+		help, submatch, noop
 refiner		relative_path, absolute_path, cwd, exists, regexp, noop
 coordinator	modern, compact, separate
 theme		MODERN, SINGLE, DOUBLE, ASCII
 
 "builtin.action" also provides ready-made tables that map action names to
 actions, such as "default_open_actions" ("open", "open:split",
-"open:vsplit", ...), "default_cd_actions" and "default_quickfix_actions".
+"open:vsplit", ...), "default_cd_actions", "default_quickfix_actions" and
+"default_submatch_actions" ("sub:fzf", "sub:substring", "sub:regexp", which
+search again within the result with another matcher).
 Merge them into the "actions" of a picker; see the default "custom.lua".
 
 The coordinators take options such as "hide_preview", "width_ratio",

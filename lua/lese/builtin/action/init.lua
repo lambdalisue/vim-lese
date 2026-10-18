@@ -19,6 +19,8 @@
 ---@field default_help_actions table<string, lese.Action>       -- help
 ---@field default_cmd_actions table<string, lese.Action>        -- cmd
 ---@field default_noop_actions table<string, lese.Action>       -- noop
+---@field submatch fun(matchers: lese.Matcher[], opts?: lese.builtin.action.SubmatchOptions): lese.Action
+---@field default_submatch_actions table<string, lese.Action>   -- sub:fzf, sub:substring, sub:regexp
 
 local M = require("lese.builtin.lazy")("lese.builtin.action", {})
 
@@ -71,6 +73,14 @@ local DEFAULTS = {
   end,
   default_noop_actions = function()
     return { noop = M.noop() }
+  end,
+  default_submatch_actions = function()
+    local matcher = require("lese.builtin").matcher
+    return {
+      ["sub:fzf"] = M.submatch({ matcher.fzf() }),
+      ["sub:substring"] = M.submatch({ matcher.substring() }),
+      ["sub:regexp"] = M.submatch({ matcher.regexp() }),
+    }
   end,
 }
 

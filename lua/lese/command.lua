@@ -66,6 +66,7 @@ end
 ---@field args? string[]
 ---@field query? string                  -- the query to start with (-input=)
 ---@field context? lese.PickerContext    -- resume from here
+---@field save_session? boolean          -- default true
 
 ---Open picker `definition` and run the action the user chooses.
 ---@param definition lese.PickerDefinition
@@ -158,7 +159,7 @@ function M.start(definition, opts)
   item_picker:close()
   item_picker:dispose()
   zindex = zindex - ui_picker.ZINDEX_ALLOCATION
-  if not SESSION_EXCLUDED[definition.name] then
+  if opts.save_session ~= false and not SESSION_EXCLUDED[definition.name] then
     session.save({
       name = definition.name,
       args = opts.args or {},
