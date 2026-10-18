@@ -22,6 +22,9 @@ fmt-check:
 # Lint, and type-check the LuaCATS annotations.
 lint:
     selene .
+    # selene/lese.yml, the standard extensions lint with, must reject host APIs.
+    cp selene/lese.yml test/selene/lese.yml
+    cd test/selene && if selene bad.lua >/dev/null; then echo "selene/lese.yml let vim.fn through" >&2; exit 1; fi
     lua-language-server --check . --checklevel=Warning --configpath "$PWD/.luarc.json"
 
 # Run the tests on every host, or only those whose name contains FILTER.

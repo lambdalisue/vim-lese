@@ -1,0 +1,10 @@
+# The selene standard for lese extensions. It declares the Lua 5.1 library and
+# nothing of `vim`, so an extension that reaches the editor other than through
+# ctx.host (or require("lese.host")) fails its lint: vim.api, vim.fn, vim.cmd,
+# vim.uv, vim.loop, vim.command and vim.list behave differently on Neovim and
+# Vim, or exist on one of them only.
+#
+# Use it from an extension with `std = "lese"` in selene.toml and this file
+# copied next to it as lese.yml.
+base: lua51
+name: lese
