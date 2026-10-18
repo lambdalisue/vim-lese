@@ -1,0 +1,5 @@
+/.envrc
+.direnv/
+result
+/.claude/worktrees/
+/doc/tags
