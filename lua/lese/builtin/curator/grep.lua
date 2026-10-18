@@ -40,6 +40,9 @@ return function(opts)
           if not p then
             return
           end
+          if sep == "\\" then
+            p = p:gsub("/", "\\")
+          end
           local vpath = opts.relative_from_base and path.relative(base, p, sep) or p
           ctx:emit({
             id = p .. ":" .. line,

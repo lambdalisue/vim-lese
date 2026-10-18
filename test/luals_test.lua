@@ -16,7 +16,10 @@ t.describe("lese.luals.library", function()
     host.cmd("let &runtimepath .= ',' . " .. host.fn.string(root))
     local dirs = luals.library()
     host.cmd("let &runtimepath = " .. host.fn.string(saved))
-    t.eq(dirs[#dirs], host.fn.fnamemodify(root .. "/lua/lese-example", ":h"))
+    local function slashed(p)
+      return (p:gsub("\\", "/"))
+    end
+    t.eq(slashed(dirs[#dirs]), slashed(host.fn.fnamemodify(root .. "/lua/lese-example", ":h")))
   end)
 
   t.it("keeps a configured library first and lists each directory once", function()
