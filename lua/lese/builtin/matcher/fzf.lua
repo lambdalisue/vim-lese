@@ -455,7 +455,7 @@ return function(opts)
       local found, keys = {}, {}
       local starts, lengths = {}, {}
       for i = 1, #items do
-        if i % 256 == 0 then
+        if i % 64 == 0 then
           ctx:checkpoint()
         end
         local item = items[i]
@@ -479,7 +479,16 @@ return function(opts)
         end
         found = ordered
       end
-      ctx:emit(found)
+      -- Handing everything over at once leaves whoever receives the items
+      -- (the contract checks among them) without a checkpoint.
+      for first = 1, #found, 256 do
+        local chunk = {}
+        for i = first, math.min(first + 255, #found) do
+          chunk[#chunk + 1] = found[i]
+        end
+        ctx:emit(chunk)
+        ctx:checkpoint()
+      end
     end,
   })
 end
