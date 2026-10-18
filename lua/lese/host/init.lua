@@ -101,9 +101,7 @@ end
 ---@param callback fun()
 ---@return integer timer
 function M.defer(ms, callback)
-  return impl.call("timer_start", ms, function()
-    callback()
-  end)
+  return impl.defer(ms, callback)
 end
 
 ---Stop a timer started by `defer`.

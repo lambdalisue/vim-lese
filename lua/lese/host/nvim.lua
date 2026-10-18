@@ -26,6 +26,12 @@ function M.wait(ms, condition)
   end, 1)
 end
 
+function M.defer(ms, callback)
+  return vim.fn.timer_start(ms, function()
+    callback()
+  end)
+end
+
 ---Split chunks from jobstart() into lines. The first element continues the
 ---previous chunk's last line; the last one is incomplete until the next chunk.
 local function line_splitter(on_line)

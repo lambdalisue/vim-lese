@@ -75,38 +75,63 @@ function M.wait(ms, condition)
   end
 end
 
+-- Vim binds a Lua function it is given to the coroutine that gave it, and runs
+-- the function there even after the coroutine yielded, which corrupts it. So
+-- callbacks reach Lua through lese#internal#invoke(), which runs on the main
+-- Lua state, and never as Lua functions.
+local function callback(fn)
+  local host = require("lese.host")
+  local id = host.register(fn)
+  return id, function()
+    host.unregister(id)
+  end
+end
+
+function M.defer(ms, fn)
+  local release
+  local id
+  id, release = callback(function()
+    release()
+    fn()
+  end)
+  return vim.fn["lese#internal#defer"](ms, id)
+end
+
 function M.spawn(cmd, opts)
   local exited, closed, status = false, false, nil
-  local pid
+  local pid, release
   local function finish()
     if exited and closed then
       vim.fn["lese#internal#job_forget"](pid)
+      release()
       if opts.on_exit then
         opts.on_exit(status)
       end
     end
   end
-  local function line_cb(on_line)
-    return function(_, msg)
-      if on_line then
-        on_line((msg:gsub("\r$", "")))
-      end
+  local function line(on_line, msg)
+    if on_line then
+      on_line((msg:gsub("\r$", "")))
     end
   end
+  local id
+  id, release = callback(function(kind, value)
+    if kind == "stdout" then
+      line(opts.on_stdout, value)
+    elseif kind == "stderr" then
+      line(opts.on_stderr, value)
+    elseif kind == "exit" then
+      exited, status = true, value
+      finish()
+    elseif kind == "close" then
+      closed = true
+      finish()
+    end
+  end)
   local options = {
     in_io = "null",
     out_mode = "nl",
     err_mode = "nl",
-    out_cb = line_cb(opts.on_stdout),
-    err_cb = line_cb(opts.on_stderr),
-    exit_cb = function(_, code)
-      exited, status = true, code
-      finish()
-    end,
-    close_cb = function()
-      closed = true
-      finish()
-    end,
   }
   if opts.cwd then
     options.cwd = opts.cwd
@@ -114,8 +139,9 @@ function M.spawn(cmd, opts)
   if opts.env then
     options.env = opts.env
   end
-  pid = vim.fn["lese#internal#job_start"](to_vim(cmd), to_vim(options))
+  pid = vim.fn["lese#internal#job_start"](to_vim(cmd), to_vim(options), id)
   if pid == 0 then
+    release()
     error(string.format("failed to start %s", tostring(cmd[1])), 0)
   end
   return {

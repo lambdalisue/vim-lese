@@ -130,3 +130,30 @@ t.describe("host.open_window", function()
     t.eq(host.fn.win_gettype(win.winid), "unknown")
   end)
 end)
+
+-- Vim binds a Lua function it receives to the coroutine that passed it, and a
+-- callback run on a suspended coroutine corrupts it; LuaJIT then fails at the
+-- next yield. It does not happen every time, so each test repeats.
+t.describe("host callbacks from a module", function()
+  t.it("let a module wait on timers", function()
+    for _ = 1, 50 do
+      t.run("sleeper", function(ctx)
+        ctx:sleep(1)
+        ctx:sleep(1)
+      end)
+    end
+  end)
+
+  t.it("let a module wait on commands", function()
+    for _ = 1, 50 do
+      local items = t.run("spawner", function(ctx)
+        ctx:spawn({ "sh", "-c", "printf 'a\nb\n'" }, {
+          on_stdout = function(line)
+            ctx:emit({ id = line, value = line, detail = {} })
+          end,
+        })
+      end)
+      t.eq(t.values(items), { "a", "b" })
+    end
+  end)
+end)

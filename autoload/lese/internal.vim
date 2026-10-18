@@ -15,8 +15,16 @@ endfunction
 " stay here and Lua holds their process id.
 let s:jobs = {}
 
-function! lese#internal#job_start(cmd, options) abort
-  let l:job = job_start(a:cmd, a:options)
+" The job's output and end reach lese#internal#invoke({id}, {kind}, {value}).
+function! lese#internal#job_start(cmd, options, id) abort
+  let l:id = a:id
+  let l:options = extend(copy(a:options), {
+        \ 'out_cb': { _, msg -> lese#internal#invoke(l:id, 'stdout', msg) },
+        \ 'err_cb': { _, msg -> lese#internal#invoke(l:id, 'stderr', msg) },
+        \ 'exit_cb': { _, code -> lese#internal#invoke(l:id, 'exit', code) },
+        \ 'close_cb': { _ -> lese#internal#invoke(l:id, 'close', v:null) },
+        \ })
+  let l:job = job_start(a:cmd, l:options)
   if job_status(l:job) ==# 'fail'
     return 0
   endif
@@ -35,4 +43,10 @@ function! lese#internal#job_forget(pid) abort
   if has_key(s:jobs, a:pid)
     call remove(s:jobs, a:pid)
   endif
+endfunction
+
+" Call lese#internal#invoke({id}) after {ms} milliseconds.
+function! lese#internal#defer(ms, id) abort
+  let l:id = a:id
+  return timer_start(a:ms, { _ -> lese#internal#invoke(l:id) })
 endfunction
