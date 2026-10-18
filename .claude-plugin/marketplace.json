@@ -1,0 +1,15 @@
+{
+  "name": "vim-lese",
+  "owner": {
+    "name": "Alisue",
+    "email": "lambdalisue@gmail.com"
+  },
+  "description": "A fuzzy finder for Vim and Neovim, written in Lua; the successor of fall",
+  "plugins": [
+    {
+      "name": "lese",
+      "source": "./plugins/lese",
+      "description": "Write, test and try lese extensions from Claude Code."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "lese",
+  "description": "Write, test and try lese extensions from Claude Code.",
+  "author": {
+    "name": "Alisue",
+    "email": "lambdalisue@gmail.com"
+  },
+  "homepage": "https://github.com/lambdalisue/vim-lese",
+  "repository": "https://github.com/lambdalisue/vim-lese",
+  "license": "MIT"
+}
