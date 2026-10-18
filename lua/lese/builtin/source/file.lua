@@ -36,32 +36,37 @@ return function(opts)
       local visited = { [fn.resolve(base)] = true }
 
       local function walk(dir, real)
-        local ok, names = pcall(fn.readdir, dir)
-        if not ok or type(names) ~= "table" then
+        local entries = ctx.host.readdir(dir)
+        if not entries then
           return
         end
         local items = {}
         local subdirs = {}
-        for _, name in ipairs(names) do
-          ctx:checkpoint()
+        for i, entry in ipairs(entries) do
+          if i % 256 == 0 then
+            ctx:checkpoint()
+          end
+          local name, kind = entry.name, entry.kind
           local p = path.join(dir, name, sep)
-          local kind = fn.getftype(p)
-          if kind == "dir" or (kind == "link" and fn.isdirectory(p) == 1) then
+          if kind == "file" then
+            if filter_file(p) then
+              id = id + 1
+              items[#items + 1] = {
+                id = id,
+                value = relative_from_base and p:sub(offset) or p,
+                detail = { path = p },
+              }
+            end
+          else
             local r = kind == "link" and fn.resolve(p) or path.join(real, name, sep)
             if not visited[r] and filter_directory(p) then
               visited[r] = true
               subdirs[#subdirs + 1] = { p, r }
             end
-          elseif kind ~= "" and filter_file(p) then
-            id = id + 1
-            items[#items + 1] = {
-              id = id,
-              value = relative_from_base and p:sub(offset) or p,
-              detail = { path = p },
-            }
           end
         end
         ctx:emit(items)
+        ctx:checkpoint()
         for _, sub in ipairs(subdirs) do
           walk(sub[1], sub[2])
         end

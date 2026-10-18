@@ -184,3 +184,36 @@ t.describe("host.emit", function()
     host.cmd("autocmd! User LeseEmitTest:*")
   end)
 end)
+
+t.describe("host.readdir", function()
+  t.it("lists files, directories and links to directories with their kinds", function()
+    local root = host.fn.fnamemodify(host.fn.tempname(), ":p"):gsub("[/\\]$", "")
+    host.fn.mkdir(root .. "/sub", "p")
+    host.fn.writefile({ "x" }, root .. "/a.txt")
+    if host.fn.has("win32") == 0 then
+      host.fn.system({ "ln", "-s", root .. "/sub", root .. "/linked" })
+      host.fn.system({ "ln", "-s", root .. "/a.txt", root .. "/alias" })
+    end
+    local entries = host.readdir(root) or {}
+    table.sort(entries, function(a, b)
+      return a.name < b.name
+    end)
+    local expected = {
+      { name = "a.txt", kind = "file" },
+      { name = "sub", kind = "dir" },
+    }
+    if host.fn.has("win32") == 0 then
+      expected = {
+        { name = "a.txt", kind = "file" },
+        { name = "alias", kind = "file" },
+        { name = "linked", kind = "link" },
+        { name = "sub", kind = "dir" },
+      }
+    end
+    t.eq(entries, expected)
+  end)
+
+  t.it("returns nil for a directory that cannot be read", function()
+    t.eq(host.readdir(host.fn.tempname() .. "-missing"), nil)
+  end)
+end)

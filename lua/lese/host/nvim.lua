@@ -65,6 +65,33 @@ local function line_splitter(on_line)
   return feed, flush
 end
 
+function M.readdir(dir)
+  local handle = uv.fs_scandir(dir)
+  if not handle then
+    return nil
+  end
+  local entries = {}
+  while true do
+    local name, kind = uv.fs_scandir_next(handle)
+    if not name then
+      break
+    end
+    if kind == "link" then
+      local stat = uv.fs_stat(dir .. "/" .. name)
+      kind = stat and (stat.type == "directory" and "link" or (stat.type == "file" and "file"))
+        or nil
+    elseif kind == "directory" then
+      kind = "dir"
+    elseif kind ~= "file" then
+      kind = nil
+    end
+    if kind then
+      entries[#entries + 1] = { name = name, kind = kind }
+    end
+  end
+  return entries
+end
+
 function M.spawn(cmd, opts)
   local feed_out, flush_out = line_splitter(opts.on_stdout)
   local feed_err, flush_err = line_splitter(opts.on_stderr)

@@ -63,3 +63,13 @@ function! lese#internal#emit(pattern) abort
   let l:pattern = substitute(a:pattern, '[\r\n]', ' ', 'g')
   execute 'doautocmd <nomodeline> User' escape(l:pattern, '|"')
 endfunction
+
+" readdirex({dir}) without sorting, or v:null when {dir} cannot be read; the
+" try keeps a failure from reaching the user as an error message.
+function! lese#internal#readdir(dir) abort
+  try
+    return readdirex(a:dir, 1, #{ sort: 'none' })
+  catch
+    return v:null
+  endtry
+endfunction

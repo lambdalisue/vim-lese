@@ -97,6 +97,29 @@ function M.defer(ms, fn)
   return vim.fn["lese#internal#defer"](ms, id)
 end
 
+-- The entries are read off the Vim list in place: converting each dict to a
+-- Lua table, or building strings in Vim script, costs more than the reading.
+local KINDS = { file = "file", dir = "dir", linkd = "link", junction = "link" }
+
+function M.readdir(dir)
+  local list = vim.fn["lese#internal#readdir"](dir)
+  if list == nil then
+    return nil
+  end
+  local entries = {}
+  for i = 1, #list do
+    local e = list[i]
+    local kind = KINDS[e.type]
+    if not kind and e.type == "link" and vim.fn.filereadable(dir .. "/" .. e.name) == 1 then
+      kind = "file"
+    end
+    if kind then
+      entries[#entries + 1] = { name = e.name, kind = kind }
+    end
+  end
+  return entries
+end
+
 function M.spawn(cmd, opts)
   local exited, closed, status = false, false, nil
   local pid, release

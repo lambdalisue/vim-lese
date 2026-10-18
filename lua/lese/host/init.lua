@@ -110,6 +110,18 @@ function M.stop_timer(timer)
   pcall(impl.call, "timer_stop", timer)
 end
 
+---@class lese.DirEntry
+---@field name string
+---@field kind "file"|"dir"|"link" -- "link" is a symbolic link to a directory; one to a file is "file"
+
+---The entries of directory `dir`, with their kinds, in one call; nil when it
+---cannot be read. Entries that are neither files nor directories are left out.
+---@param dir string
+---@return lese.DirEntry[]?
+function M.readdir(dir)
+  return impl.readdir(dir)
+end
+
 ---Run an external command. Output arrives line by line, without the line
 ---break (CR LF included).
 ---@param cmd string[]
