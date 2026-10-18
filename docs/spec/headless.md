@@ -36,8 +36,11 @@ an action, or print JSON instead.
   without installing it.
 - `--host=both` runs the picker on Neovim and on Vim and exits with status 3
   when they print different text.
-- Contracts are checked as in tests. A module that fails prints `error:`
-  lines and makes the exit status non-zero.
+- Contracts are checked as in tests. A module that fails prints an `error:`
+  line on stderr and makes the exit status non-zero; a module that runs long
+  between checkpoints prints a `warning:` line there. Neither is part of the
+  text `--host=both` compares, since timing and tracebacks differ between
+  runs and hosts.
 
 ## The test API
 

@@ -90,6 +90,27 @@ function M.parse(argv)
   return opts
 end
 
+local function first_lines(messages)
+  local out = {}
+  for i, message in ipairs(messages) do
+    out[i] = message:match("^[^\n]*")
+  end
+  return out
+end
+
+-- Warnings depend on timing and tracebacks on the host, so they are kept apart
+-- from the output lese-run compares between hosts.
+local function diagnostics(warnings, errors)
+  local lines = {}
+  for _, w in ipairs(warnings) do
+    lines[#lines + 1] = "warning: " .. w
+  end
+  for _, e in ipairs(errors) do
+    lines[#lines + 1] = "error: " .. e
+  end
+  return lines
+end
+
 local function messages()
   return host.call("execute", "messages")
 end
@@ -99,6 +120,7 @@ end
 ---@param opts lese.CliOptions
 ---@return string output
 ---@return boolean ok
+---@return string[] diagnostics warnings and errors, for stderr
 function M.run(opts)
   contract.strict = true
   local warnings = {}
@@ -191,10 +213,11 @@ function M.run(opts)
       items = items,
       preview = preview,
       action = action_output,
-      errors = driver.errors,
-      warnings = warnings,
+      -- The first line names what failed; the traceback below differs by host.
+      errors = first_lines(driver.errors),
     }),
-      ok
+      ok,
+      diagnostics(warnings, driver.errors)
   end
   local lines = screen.lines(model)
   if opts.preview then
@@ -212,14 +235,8 @@ function M.run(opts)
       lines[#lines + 1] = l
     end
   end
-  for _, w in ipairs(warnings) do
-    lines[#lines + 1] = "warning: " .. w
-  end
-  for _, e in ipairs(driver.errors) do
-    lines[#lines + 1] = "error: " .. e
-  end
   driver:close()
-  return table.concat(lines, "\n"), ok
+  return table.concat(lines, "\n"), ok, diagnostics(warnings, driver.errors)
 end
 
 ---Read the NUL-separated arguments bin/lese-run wrote, empty ones included.
@@ -258,18 +275,22 @@ function M.main()
       return
     end
   end
-  local out = io.stdout
-  local ok, output, success = pcall(function()
+  local out, err = io.stdout, io.stderr
+  local ok, output, success, problems = pcall(function()
     return M.run(M.parse(argv))
   end)
   if not ok then
-    out:write("error: ", tostring(output), "\n")
-    out:flush()
+    err:write("error: ", tostring(output), "\n")
+    err:flush()
     host.cmd("cquit 2")
     return
   end
   out:write(output, "\n")
   out:flush()
+  for _, line in ipairs(problems) do
+    err:write(line, "\n")
+  end
+  err:flush()
   if success then
     host.cmd("qall!")
   else

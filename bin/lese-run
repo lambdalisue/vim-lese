@@ -52,9 +52,16 @@ run() {
 case "$host" in
   both)
     status=0
-    run nvim >"$tmp/nvim" 2>&1 || status=$?
-    run vim >"$tmp/vim" 2>&1 || status=$?
+    run nvim >"$tmp/nvim" 2>"$tmp/nvim.err" || status=$?
+    run vim >"$tmp/vim" 2>"$tmp/vim.err" || status=$?
     cat "$tmp/nvim"
+    # Warnings and errors depend on timing and on the host; they are shown,
+    # not compared.
+    for h in nvim vim; do
+      while IFS= read -r line; do
+        printf '[%s] %s\n' "$h" "$line" >&2
+      done <"$tmp/$h.err"
+    done
     if ! diff -u --label nvim --label vim "$tmp/nvim" "$tmp/vim" >"$tmp/diff"; then
       echo "lese-run: Neovim and Vim printed different results:" >&2
       cat "$tmp/diff" >&2
