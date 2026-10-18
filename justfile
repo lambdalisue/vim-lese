@@ -2,8 +2,9 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# The hosts `just test` runs on. CI on Windows narrows it to `nvim`.
-hosts := env("HOSTS", "nvim vim vim-luajit")
+# The hosts `just test` runs on, in order. `luajit` runs only test/core/, the
+# host-free part, without an editor. CI on Windows narrows it to `nvim`.
+hosts := env("HOSTS", "luajit nvim vim vim-luajit")
 
 # List the recipes.
 default:
@@ -27,9 +28,9 @@ lint:
 test filter="":
     for host in {{hosts}}; do just test-on "$host" "{{filter}}"; done
 
-# Run the tests on one host: nvim, vim or vim-luajit.
+# Run the tests on one host: luajit, nvim, vim or vim-luajit.
 test-on host filter="":
-    TEST_FILTER="{{filter}}" {{ if host == "nvim" { "nvim --headless --clean" } else { host + " -Nu NONE -i NONE -es" } }} --cmd 'set rtp^=.' -c 'luafile test/run.lua' </dev/null
+    TEST_FILTER="{{filter}}" {{ if host == "luajit" { "luajit -e 'package.path = \"lua/?.lua;lua/?/init.lua;\" .. package.path' test/run.lua test/core/*_test.lua" } else if host == "nvim" { "nvim --headless --clean --cmd 'set rtp^=.' -c 'luafile test/run.lua' </dev/null" } else { host + " -Nu NONE -i NONE -es --cmd 'set rtp^=.' -c 'luafile test/run.lua' </dev/null" } }}
 
 # Everything CI runs.
 ci: fmt-check lint test

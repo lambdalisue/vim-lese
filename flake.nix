@@ -40,6 +40,8 @@
               pkgs.neovim
               vim
               vim-luajit
+              # Runs lua/lese/core/ tests without an editor.
+              pkgs.luajit
               pkgs.stylua
               pkgs.selene
               pkgs.lua-language-server

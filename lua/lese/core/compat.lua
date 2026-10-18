@@ -14,4 +14,10 @@ function M.pack(...)
   return packed
 end
 
+---True inside an editor; false in a bare Lua, which runs only lese.core.
+---@return boolean
+function M.in_editor()
+  return vim ~= nil
+end
+
 return M
