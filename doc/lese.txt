@@ -1,4 +1,4 @@
-*lese.txt*	A fuzzy finder for Vim and Neovim, written in Lua; the successor of fall
+*lese.txt*	A fuzzy finder for Vim and Neovim, written in Lua
 
 Author:  Alisue <lambdalisue@gmail.com>
 License: MIT License (See LICENSE)
@@ -9,24 +9,881 @@ CONTENTS					*lese-contents*
 INTRODUCTION			|lese-introduction|
 REQUIREMENTS			|lese-requirements|
 USAGE				|lese-usage|
+CONFIGURATION			|lese-configuration|
+CUSTOMIZATION			|lese-customization|
+HEADLESS			|lese-headless|
 INTERFACE			|lese-interface|
+MODULE				|lese-module|
 
 =============================================================================
 INTRODUCTION					*lese-introduction*
 
+Lese (*vim-lese*) is a fuzzy finder for Vim and Neovim, written in Lua. It is
+the successor of fall (https://github.com/vim-fall/fall.vim), rebuilt without
+Denops: the whole picker runs inside the editor's own Lua.
+
+The name is German for the grape harvest: picking the good ones out of many.
+
+Key features include:
+
+	- Quick help via <F1> key.
+	- Multiple matchers, sorters, renderers, and previewers per picker.
+	- Submatch for refining the filtered items further.
+	- Action selector for invoking various actions.
+	- The same Lua on Neovim and on Vim built with |+lua|.
+	- Extensible through Lua customization ("custom.lua").
+	- Pickers that run headlessly, for testing extensions.
+
+Commands, <Plug> mappings and default keys, highlight groups, autocmds and
+the shape of the configuration follow fall with "Fall" renamed to "Lese".
+Module code is not compatible with fall's TypeScript modules.
 
 =============================================================================
 REQUIREMENTS					*lese-requirements*
 
-Neovim, or Vim built with |+lua|.
+One of the following:
+
+	- Neovim 0.10 or later.
+	- Vim 9.1 or later built with |+lua| (any Lua 5.1 to 5.5, or LuaJIT).
+
+No Deno or other runtime is needed.
+
+External commands are optional. Some builtin modules use them when a picker
+asks for them, for example "rg" (ripgrep) for the "rg" picker and "git" for
+the "git-grep" picker.
+
+The default "nerdfont" renderer and the "MODERN" theme need a terminal font
+patched with Nerd Font icons to display properly.
+
+Nerd Font~
+	A collection of icons compatible with popular programming fonts.
+	https://www.nerdfonts.com/
+
+To stop using them, remove "builtin.renderer.nerdfont()" from the
+"renderers" of each picker and pick another theme in "custom.lua". See
+|lese-customization| for details.
 
 =============================================================================
 USAGE						*lese-usage*
 
+The |:Lese| command opens a floating window that filters the items of the
+specified picker. For instance, to filter files in the current directory
+using the "file" picker:
+>
+	:Lese file
+<
+To filter files in a specific directory, provide the directory path as an
+argument:
+>
+	:Lese file /path/to/directory
+<
+To filter lines within the current buffer, use the "line" picker:
+>
+	:Lese line
+<
+To set an initial query, use the "-input=" option before the picker name:
+>
+	:Lese -input="Hello world" file
+<
+Use quotes when the query contains spaces. The "-input=" option must appear
+before the picker name; anything after the name is passed to the picker.
+
+Pickers are declared in "custom.lua" (see |:LeseCustom|). The default
+"custom.lua" declares the following pickers:
+
+Name		Description~
+"grep"		Filter files by their content using grep.
+"git-grep"	Filter files by their content using git-grep.
+"rg"		Filter files by their content using ripgrep (rg).
+"file"		Filter files in the directory.
+"file:all"	Filter files in the directory without static filters.
+"line"		Filter lines in the buffer.
+"buffer"	Filter buffers.
+"help"		Filter help tags.
+"quickfix"	Filter |quickfix| list.
+"oldfiles"	Filter |:oldfiles|.
+"history"	Filter command history.
+
+Users can declare additional pickers in "custom.lua". See
+|lese-customization| for details.
+
+Within the picker window, type to narrow the list, press <CR> to invoke the
+default action on the item under the cursor, or <Esc> to close the picker.
+The following default mappings are applied as well. They may vary with
+configuration; the <F1> help lists the keys in effect.
+
+Key		Description~
+<C-t>		Move cursor to the first item.
+<C-g>		Move cursor to the last item.
+<C-p>		Move cursor to the previous item.
+<C-n>		Move cursor to the next item.
+<C-u>		Move cursor up by half the list height.
+<C-d>		Move cursor down by half the list height.
+<PageUp>	Scroll list content left.
+<PageDown>	Scroll list content right.
+<S-PageUp>	Scroll list content left by half a screen.
+<S-PageDown>	Scroll list content right by half a screen.
+<C-,>		Select the current item.
+<C-.>		Select all items.
+<C-j>		Select the current item and move to the next item.
+<C-k>		Move to the previous item and select it.
+<M-Home>	Move cursor to the first line of preview.
+<M-End>		Move cursor to the last line of preview.
+<M-Up>		Move cursor to the previous line of preview.
+<M-Down>	Move cursor to the next line of preview.
+<S-Up>		Scroll preview up by 'scroll' lines.
+<S-Down>	Scroll preview down by 'scroll' lines.
+<M-Left>	Scroll preview left.
+<M-Right>	Scroll preview right.
+<S-Left>	Scroll preview left by half a screen.
+<S-Right>	Scroll preview right by half a screen.
+<Tab>		Open the action selector.
+<F1>		Open or close help window.
+<S-Home>	Show the previous page of help.
+<S-End>		Show the next page of help.
+<F2>		Switch to the next matcher.
+<F3>		Switch to the next sorter.
+<F4>		Switch to the next renderer.
+<F5>		Switch to the next previewer.
+
+Users can define additional mappings via the |LesePickerEnter| autocmd. See
+|lese-configuration| for details.
+
+=============================================================================
+CONFIGURATION					*lese-configuration*
+
+In Lese, configurations that leverage Vim's built-in functionality are
+categorized as "Configuration." This includes settings such as key mappings,
+highlights, and buffer options.
+
+-----------------------------------------------------------------------------
+MAPPING					*lese-configuration-mapping*
+
+Use <Plug> mappings with |cnoremap| in the |LesePickerEnter| autocmd to
+configure mappings. See |lese-mapping| for a list of available mappings.
+
+For example:
+>vim
+	function! s:my_lese() abort
+	  " Use <Up> and <Down> to navigate instead of <C-n> and <C-p>
+	  cnoremap <nowait> <Up> <Plug>(lese-list-prev)
+	  cnoremap <nowait> <Down> <Plug>(lese-list-next)
+	  " Open in split window
+	  cnoremap <nowait> <C-x> <Cmd>call lese#action('open:split')<CR>
+	  cnoremap <nowait> <C-v> <Cmd>call lese#action('open:vsplit')<CR>
+	endfunction
+
+	augroup my_lese
+	  autocmd!
+	  autocmd User LesePickerEnter:* call s:my_lese()
+	augroup END
+<
+To disable the default mappings, use |g:lese#disable_default_mappings|:
+>vim
+	let g:lese#disable_default_mappings = v:true
+<
+-----------------------------------------------------------------------------
+HIGHLIGHT				*lese-configuration-highlight*
+
+Use the LeseXXXXX highlight groups to configure the appearance of the picker
+window. See |lese-highlight| for a list of available highlight groups.
+
+For example:
+>vim
+	function! s:my_lese_style() abort
+	  highlight LeseNormal
+	        \ ctermfg=Blue
+	        \ ctermbg=Black
+	        \ guifg=#0000FF
+	        \ guibg=#000000
+	  highlight LeseBorder ctermfg=Green guifg=#00FF00
+	  highlight LeseInputHeader cterm=bold ctermfg=Yellow guifg=#FFFF00
+	endfunction
+
+	augroup my_lese_style
+	  autocmd!
+	  autocmd ColorScheme * call s:my_lese_style()
+	augroup END
+	call s:my_lese_style()
+<
+-----------------------------------------------------------------------------
+SIGN					*lese-configuration-sign*
+
+Use the LeseXXXXXSign signs to configure the appearance of the picker window.
+See |lese-sign| for a list of available signs.
+
+For example:
+>vim
+	function! s:my_lese_sign() abort
+	  sign define LeseListSelectedSign text=*
+	endfunction
+
+	augroup my_lese_sign
+	  autocmd!
+	  autocmd ColorScheme * call s:my_lese_sign()
+	augroup END
+	call s:my_lese_sign()
+<
+-----------------------------------------------------------------------------
+AUTOCMD					*lese-configuration-autocmd*
+
+Use the LeseXXXXX autocmd events to configure the behavior of the picker
+window. See |lese-autocmd| for a list of available events.
+
+For example:
+>vim
+	function! s:my_lese_preview() abort
+	  " Disable number/relativenumber on the preview component
+	  setlocal nonumber norelativenumber
+	endfunction
+
+	augroup my_lese_preview
+	  autocmd!
+	  autocmd User LesePreviewRendered:* call s:my_lese_preview()
+	augroup END
+<
+-----------------------------------------------------------------------------
+FILETYPE				*lese-configuration-filetype*
+
+Use the lese-xxxxx filetypes to configure the appearance and behavior of the
+picker window. See |lese-filetype| for a list of available filetypes.
+
+For example:
+>vim
+	function! s:my_lese_config() abort
+	  " Enable the 'list' option on Lese's components
+	  setlocal list
+	endfunction
+
+	augroup my_lese_config
+	  autocmd!
+	  autocmd FileType lese-input call s:my_lese_config()
+	  autocmd FileType lese-list call s:my_lese_config()
+	  autocmd FileType lese-help call s:my_lese_config()
+	augroup END
+<
+=============================================================================
+CUSTOMIZATION					*lese-customization*
+
+In Lese, settings written in Lua to extend Lese's behavior are categorized as
+"Customization." This refers to the user customization file "custom.lua",
+which |:LeseCustom| opens.
+
+See |lese-module| for the modules used in customization.
+
+-----------------------------------------------------------------------------
+CUSTOMIZATION FILE			*lese-customization-file*
+
+"custom.lua" is a Lua file that returns a function. Lese calls the function
+with the entrypoint "x", whose functions declare pickers and settings (see
+|lese-customization-arguments|).
+
+Until the user creates one, Lese uses the default "custom.lua" it ships
+("lua/lese/assets/default_custom.lua"). |:LeseCustom| creates the user's file
+at |g:lese_custom_path| from that default on first use, opens it, and
+reloads it on every write.
+
+Only the pickers declared in "custom.lua" exist. Installing an extension adds
+no picker by itself; the user brings its pickers in from "custom.lua". For
+example, a "custom.lua" that declares nothing leaves Lese with no pickers:
+>lua
+	return function(x)
+	  -- WARNING: no picker is declared, so Lese provides no functionality
+	end
+<
+When the user's "custom.lua" fails to load, Lese reports the error and keeps
+the pickers loaded before, or falls back to the default "custom.lua" when
+nothing was loaded yet.
+
+-----------------------------------------------------------------------------
+DEFINING PICKERS			*lese-customization-defining-pickers*
+
+A picker is declared with at least its name, a source, matchers, actions and
+a default action. Builtin modules live in "require('lese.builtin')", grouped
+by kind. A module that takes options is a function that returns the module,
+and it is always called, with options or without:
+>lua
+	local builtin = require("lese.builtin")
+
+	return function(x)
+	  x.define_picker_from_source("file", builtin.source.file(), {
+	    matchers = { builtin.matcher.fzf() },
+	    actions = {
+	      open = builtin.action.open(),
+	    },
+	    default_action = "open",
+	  })
+	end
+<
+Besides "actions" and "default_action", the parameters take "matchers"
+(required for a source picker), "sorters", "renderers", "previewers",
+"coordinator" and "theme". Picker names and action names must not start
+with "@", and a picker name is declared once.
+
+-----------------------------------------------------------------------------
+AVAILABLE ARGUMENTS			*lese-customization-arguments*
+
+The function "custom.lua" returns receives the entrypoint "x" with the
+following functions:
+
+Name				Description~
+"define_picker_from_source"	Declare a picker from a Source and
+				Matchers.
+				"x.define_picker_from_source(name, source,
+				params)"
+
+"define_picker_from_curator"	Declare a picker from a Curator, which
+				searches again for each query.
+				"x.define_picker_from_curator(name, curator,
+				params)"
+
+"refine_setting"		Set the "coordinator" and "theme" every
+				picker uses unless it says otherwise.
+				"x.refine_setting({ coordinator?, theme? })"
+
+"refine_action_picker"		Set the "matchers" and "coordinator" of the
+				action selector.
+				"x.refine_action_picker({ matchers?,
+				coordinator? })"
+
+See "lua/lese/assets/default_custom.lua" for the latest default
+customization file, and |lese-module-builtin| for the builtin modules.
+
+-----------------------------------------------------------------------------
+MODULE COMPOSITION		*lese-customization-module-composition*
+
+"require('lese.std')" provides the following functions to refine and
+compose modules:
+
+Name			Description~
+"bind_source_args"	Wraps a Source to prepend fixed arguments (static or
+			resolved per run by a function) to the arguments the
+			picker passes.
+
+"bind_curator_args"	Wraps a Curator to prepend fixed arguments, in the
+			same way as "bind_source_args".
+
+"refine_source"		Applies Refiners in order to the items of a Source.
+			An item a Refiner drops does not reach the picker.
+
+"refine_curator"	Applies Refiners in order to the items of a Curator.
+
+"compose_sources"	Combines Sources into a Source that emits the items
+			of every Source in turn.
+
+"compose_curators"	Combines Curators into a Curator that emits the items
+			of every Curator in turn.
+
+"compose_matchers"	Combines Matchers into a Matcher that runs each on
+			what the previous one let through.
+
+"compose_sorters"	Combines Sorters into a Sorter that runs them in
+			turn.
+
+"compose_renderers"	Combines Renderers into a Renderer that runs them in
+			turn.
+
+"compose_previewers"	Combines Previewers into a Previewer that returns
+			the first preview one of them gives.
+
+"compose_actions"	Combines Actions into an Action that invokes every
+			Action in order.
+
+For example, the following Source lists files recorded in |v:oldfiles| that
+exist under the current directory:
+>lua
+	local builtin = require("lese.builtin")
+	local std = require("lese.std")
+
+	local source = std.refine_source(
+	  builtin.source.oldfiles(),
+	  builtin.refiner.cwd(),
+	  builtin.refiner.exists()
+	)
+<
+Similarly, the following Action changes the directory and then opens:
+>lua
+	local action = std.compose_actions(
+	  builtin.action.cd(),
+	  builtin.action.open()
+	)
+<
+=============================================================================
+HEADLESS					*lese-headless*
+
+Lese runs a picker without opening the editor's UI and prints what it would
+show as plain text, so extensions can be tried and tested on both hosts.
+
+bin/lese-run~
+	Runs a picker headlessly and prints the screen text:
+>sh
+	bin/lese-run [--host=nvim|vim|both] [--rtp DIR]... \
+	  [--custom FILE] <picker> [ARG]...
+<
+	"--rtp" puts an extension under development on 'runtimepath', and
+	"--host=both" fails when Neovim and Vim print different text. Run
+	it with "--help" for every option.
+
+require("lese.testing")~
+	A test API that runs inside the editor: "describe", "it",
+	assertions, runners for single modules, "picker()" to drive a whole
+	picker, and snapshots of the screen text. Tests run in strict mode.
+
+See "docs/spec/headless.md" in the repository for details.
 
 =============================================================================
 INTERFACE					*lese-interface*
 
+-----------------------------------------------------------------------------
+COMMAND						*lese-command*
+
+							*:Lese*
+:Lese [-input={query}] {picker} [{args}...]
+	Open {picker} (declared in "custom.lua", see |:LeseCustom|). {args}
+	are passed to the picker's source or curator.
+
+	The "-input=" option sets the initial query. When {query} contains
+	spaces, enclose it in quotes.
+
+	Note: The "-input=" option must appear BEFORE the picker name.
+	Options after the picker name are passed to the picker as {args}.
+>vim
+	" Filter files in the current directory
+	:Lese file
+
+	" Filter files in the specified directory
+	:Lese file /path/to/directory
+
+	" Start with a query
+	:Lese -input="Hello world" file
+
+	" Combine with arguments
+	:Lese -input="search term" grep /path/to/dir
+
+	" Invalid: -input= after the picker name (passed as an argument)
+	:Lese file -input="test"
+<
+							*:LeseResume*
+:LeseResume [{picker}][#{n}]
+	Resume a previous picker session with its query, items and
+	selection. Without {picker}, it resumes the {n}-th newest session of
+	any picker; with {picker}, the {n}-th newest session of that picker
+	only. {n} defaults to 1 (the newest).
+>vim
+	" Resume the newest session
+	:LeseResume
+
+	" Resume the newest session of the "file" picker
+	:LeseResume file
+
+	" Resume the 2nd newest session
+	:LeseResume #2
+
+	" Resume the 2nd newest session of the "file" picker
+	:LeseResume file#2
+<
+							*:LeseSession*
+:LeseSession
+	Open a picker that lists previous picker sessions, newest first, with
+	their number, picker name and arguments. The preview shows the query
+	and the filtered items of the session. Selecting one resumes it with
+	|:LeseResume|.
+
+	Lese keeps the most recent sessions in memory and drops older ones.
+	The action selector and the session picker itself are not saved.
+
+							*:LeseCustom*
+:LeseCustom
+	Open "custom.lua" at |g:lese_custom_path|. When the file does not
+	exist yet, it is created from the default "custom.lua". Writing the
+	buffer reloads it with |:LeseCustomReload|.
+
+							*:LeseCustomReload*
+:LeseCustomReload
+	Reload "custom.lua" to apply changes. Lua modules that "custom.lua"
+	loaded are loaded afresh. When the reload fails, the pickers loaded
+	before are kept.
+
+-----------------------------------------------------------------------------
+FUNCTION					*lese-function*
+
+							*lese#action()*
+lese#action({name})
+	Invoke the action {name} on the open picker, as if it were chosen
+	from the action selector. "@select" opens the action selector.
+	Use it in mappings defined in |LesePickerEnter|:
+>vim
+	cnoremap <nowait> <C-x> <Cmd>call lese#action('open:split')<CR>
+<
+-----------------------------------------------------------------------------
+VARIABLE					*lese-variable*
+
+							*g:lese_custom_path*
+g:lese_custom_path
+	The path of the user's "custom.lua".
+
+	Default: "~/.vim/lese/custom.lua" on Vim,
+		 "stdpath('config')/lese/custom.lua" on Neovim
+
+					*g:lese#disable_default_mappings*
+g:lese#disable_default_mappings
+	When true, Lese defines no default key mappings in the picker. The
+	<Plug> mappings in |lese-mapping| are still available.
+
+	Default: 0
+
+							*g:lese_strict*
+g:lese_strict
+	When true, Lese checks the contracts of modules at run time and
+	reports modules that run long without calling "ctx:checkpoint()".
+	Useful while writing an extension.
+
+	Default: 0
+
+-----------------------------------------------------------------------------
+MAPPING						*lese-mapping*
+
+The following mappings are |cmdline-mode| mappings, available while a picker
+is open.
+
+*<Plug>(lese-list-first)*
+	Moves the cursor to the first item in the list.
+
+*<Plug>(lese-list-last)*
+	Moves the cursor to the last item in the list.
+
+*<Plug>(lese-list-prev)*
+	Moves the cursor to the previous item in the list.
+
+*<Plug>(lese-list-next)*
+	Moves the cursor to the next item in the list.
+
+*<Plug>(lese-list-prev:scroll)*
+	Moves the cursor up by half the height of the list.
+
+*<Plug>(lese-list-next:scroll)*
+	Moves the cursor down by half the height of the list.
+
+*<Plug>(lese-list-left)*
+	Scrolls the list content to the left.
+
+*<Plug>(lese-list-right)*
+	Scrolls the list content to the right.
+
+*<Plug>(lese-list-left:scroll)*
+	Scrolls the list content to the left by half a screen width.
+
+*<Plug>(lese-list-right:scroll)*
+	Scrolls the list content to the right by half a screen width.
+
+*<Plug>(lese-select)*
+	Toggles the selection of the item under the cursor.
+
+*<Plug>(lese-select-all)*
+	Toggles the selection of all items in the list.
+
+*<Plug>(lese-switch-matcher-first)*
+	Switches to the first matcher.
+
+*<Plug>(lese-switch-matcher-last)*
+	Switches to the last matcher.
+
+*<Plug>(lese-switch-matcher-prev)*
+	Switches to the previous matcher, cycling.
+
+*<Plug>(lese-switch-matcher-next)*
+	Switches to the next matcher, cycling.
+
+*<Plug>(lese-switch-sorter-first)*
+	Switches to the first sorter.
+
+*<Plug>(lese-switch-sorter-last)*
+	Switches to the last sorter.
+
+*<Plug>(lese-switch-sorter-prev)*
+	Switches to the previous sorter, cycling.
+
+*<Plug>(lese-switch-sorter-next)*
+	Switches to the next sorter, cycling.
+
+*<Plug>(lese-switch-renderer-first)*
+	Switches to the first renderer.
+
+*<Plug>(lese-switch-renderer-last)*
+	Switches to the last renderer.
+
+*<Plug>(lese-switch-renderer-prev)*
+	Switches to the previous renderer, cycling.
+
+*<Plug>(lese-switch-renderer-next)*
+	Switches to the next renderer, cycling.
+
+*<Plug>(lese-switch-previewer-first)*
+	Switches to the first previewer.
+
+*<Plug>(lese-switch-previewer-last)*
+	Switches to the last previewer.
+
+*<Plug>(lese-switch-previewer-prev)*
+	Switches to the previous previewer, cycling.
+
+*<Plug>(lese-switch-previewer-next)*
+	Switches to the next previewer, cycling.
+
+*<Plug>(lese-preview-first)*
+	Moves the preview cursor to the first line.
+
+*<Plug>(lese-preview-last)*
+	Moves the preview cursor to the last line.
+
+*<Plug>(lese-preview-prev)*
+	Moves the preview cursor to the previous line.
+
+*<Plug>(lese-preview-next)*
+	Moves the preview cursor to the next line.
+
+*<Plug>(lese-preview-prev:scroll)*
+	Scrolls the preview up by the value of 'scroll'.
+
+*<Plug>(lese-preview-next:scroll)*
+	Scrolls the preview down by the value of 'scroll'.
+
+*<Plug>(lese-preview-left)*
+	Scrolls the preview content to the left.
+
+*<Plug>(lese-preview-right)*
+	Scrolls the preview content to the right.
+
+*<Plug>(lese-preview-left:scroll)*
+	Scrolls the preview content to the left by half a screen width.
+
+*<Plug>(lese-preview-right:scroll)*
+	Scrolls the preview content to the right by half a screen width.
+
+*<Plug>(lese-help)*
+	Toggles the help component.
+
+*<Plug>(lese-help-prev)*
+	Shows the previous page of the help component.
+
+*<Plug>(lese-help-next)*
+	Shows the next page of the help component.
+
+*<Plug>(lese-action-select)*
+	Opens the action selector. Same as "lese#action('@select')".
+
+-----------------------------------------------------------------------------
+HIGHLIGHT					*lese-highlight*
+
+*LeseNormal*
+	Default text in the picker window
+	(default: |hl-NormalFloat| on Neovim, |hl-Normal| on Vim).
+
+*LeseBorder*
+	Borders of the picker window
+	(default: |hl-FloatBorder| on Neovim, "Delimiter" on Vim).
+
+*LeseInputHeader*
+	Header of the input component (default: |LeseBorder|).
+
+*LeseInputCounter*
+	Item counter of the input component (default: |LeseBorder|).
+
+*LeseInputCursor*
+	Cursor of the input component (default: |hl-Cursor|).
+
+*LeseListMatch*
+	Matched text in the list (default: |hl-Search|).
+
+*LeseListSelected*
+	Selected items in the list (default: |hl-CurSearch|).
+
+*LeseHelpHeader*
+	Header of the help component (default: |hl-Conceal|).
+
+*LeseHelpMappingLhs*
+	Mapping LHS in the help component (default: "Special").
+
+*LeseHelpMappingRhs*
+	Mapping RHS in the help component (default: |hl-Title|).
+
+*LeseHelpMappingOperator*
+	Operators in the help component (default: "Operator").
+
+-----------------------------------------------------------------------------
+SIGN						*lese-sign*
+
+*LeseListSelectedSign*
+	Sign on the selected items in the list component. Defaults to "≫"
+	highlighted with |LeseListSelected|.
+
+-----------------------------------------------------------------------------
+AUTOCMD						*lese-autocmd*
+
+							*LesePickerEnter*
+LesePickerEnter:{name}
+	|User| |autocmd| triggered on entering the {name} picker.
+
+	Use it to define custom key mappings:
+>vim
+	function! s:my_lese() abort
+	  cnoremap <nowait> <Up> <Plug>(lese-list-prev)
+	  cnoremap <nowait> <Down> <Plug>(lese-list-next)
+	  cnoremap <nowait> <C-x> <Cmd>call lese#action('open:split')<CR>
+	endfunction
+
+	augroup my_lese
+	  autocmd!
+	  autocmd User LesePickerEnter:* call s:my_lese()
+	augroup END
+<
+	Mappings defined in this autocmd are discarded when the picker
+	closes. See |LesePickerLeave| for the leave event.
+
+							*LesePickerLeave*
+LesePickerLeave:{name}
+	|User| |autocmd| triggered on leaving the {name} picker.
+
+	See |LesePickerEnter| for the enter event.
+
+							*LesePreviewRendered*
+LesePreviewRendered:{filename}
+	|User| |autocmd| triggered when the preview is rendered. {filename}
+	is the name of the rendered file. It runs in the preview window.
+
+	Use it to configure the preview:
+>vim
+	function! s:my_lese_preview() abort
+	  " Enable line numbers
+	  setlocal number
+	endfunction
+
+	augroup my_lese_preview
+	  autocmd!
+	  autocmd User LesePreviewRendered:* call s:my_lese_preview()
+	augroup END
+<
+							*LeseCustomLoaded*
+LeseCustomLoaded
+	|User| |autocmd| triggered when the user's "custom.lua" is loaded.
+	See |:LeseCustomReload| for reloading.
+
+-----------------------------------------------------------------------------
+FILETYPE					*lese-filetype*
+
+Lese provides the following filetypes:
+
+	lese-input	Input component.
+	lese-list	List component.
+	lese-help	Help component.
+
+Example usage:
+>vim
+	augroup my_lese_list
+	  autocmd!
+	  autocmd FileType lese-list setlocal list
+	augroup END
+<
+The preview's filetype is determined by the previewer; use
+|LesePreviewRendered| to configure the preview.
 
 =============================================================================
-vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
+MODULE						*lese-module*
+
+Lese decomposes the functionality of a fuzzy finder into the following
+modules. Each module is a Lua table with a "name" and one function that
+takes the context "ctx" first. Define modules with "require('lese.define')"
+to have their contracts checked in strict mode (see |g:lese_strict|).
+
+See "docs/spec/modules.md" in the repository for the full contract of items,
+modules and the context.
+
+						*lese-module-coordinator*
+Coordinator~
+	Determines the style and layout of the picker windows.
+
+							*lese-module-theme*
+Theme~
+	The borders, dividers, symbols and icons of the picker. It is passed
+	to the |lese-module-coordinator|.
+
+							*lese-module-source*
+Source~
+	Collects items, for example files or buffers, and emits them through
+	"ctx:emit()".
+
+							*lese-module-matcher*
+Matcher~
+	Filters the items collected by the |lese-module-source| with the
+	query and emits the matching ones.
+
+							*lese-module-curator*
+Curator~
+	Collects items for each query, combining |lese-module-source| and
+	|lese-module-matcher|. Mainly used for live-grep like pickers.
+
+							*lese-module-sorter*
+Sorter~
+	Reorders the filtered items in place.
+
+							*lese-module-renderer*
+Renderer~
+	Sets how the visible items look: their label and highlighted ranges.
+
+						*lese-module-previewer*
+Previewer~
+	Generates content for previewing the item under the cursor.
+
+							*lese-module-action*
+Action~
+	Does something with the item under the cursor or the selected items.
+	Returning true keeps the picker open.
+
+							*lese-module-refiner*
+Refiner~
+	Transforms or drops items one at a time on their way out of a
+	|lese-module-source| or |lese-module-curator|.
+
+A module that loops over many items calls "ctx:checkpoint()" in the loop so
+that the editor does not freeze and a cancelled run stops promptly.
+
+-----------------------------------------------------------------------------
+BUILTIN						*lese-module-builtin*
+
+"require('lese.builtin')" groups the builtin modules by kind. Factories are
+called to get a module ("builtin.matcher.fzf()"); themes are plain tables.
+
+Kind		Members~
+source		file, line, buffer, helptag, quickfix, oldfiles, history,
+		list, noop
+curator		grep, git_grep, rg, noop
+matcher		fzf, substring, regexp, noop
+sorter		lexical, numerical, noop
+renderer	nerdfont, smart_path, relative_path, absolute_path, helptag,
+		noop
+previewer	file, buffer, helptag, noop
+action		open, systemopen, cd, quickfix, buffer, cmd, echo, yank,
+		help, noop
+refiner		relative_path, absolute_path, cwd, exists, regexp, noop
+coordinator	modern, compact, separate
+theme		MODERN, SINGLE, DOUBLE, ASCII
+
+"builtin.action" also provides ready-made tables that map action names to
+actions, such as "default_open_actions" ("open", "open:split",
+"open:vsplit", ...), "default_cd_actions" and "default_quickfix_actions".
+Merge them into the "actions" of a picker; see the default "custom.lua".
+
+The coordinators take options such as "hide_preview", "width_ratio",
+"height_ratio" and "preview_ratio":
+>lua
+	x.refine_setting({
+	  coordinator = builtin.coordinator.compact({ hide_preview = true }),
+	  theme = builtin.theme.ASCII,
+	})
+<
+Extensions are plugins whose Lua lives under "lua/lese-<name>/". They
+provide modules, and may provide a function that declares their recommended
+pickers when "custom.lua" calls it.
+
+=============================================================================
+vim:tw=78:ts=8:noet:ft=help:norl:
