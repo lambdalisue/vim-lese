@@ -4,6 +4,9 @@
 -- Install https://github.com/BurntSushi/ripgrep to use 'builtin.curator.rg'
 -- Install https://www.nerdfonts.com/ to use 'builtin.renderer.nerdfont'
 -- Install https://github.com/thinca/vim-qfreplace to use 'Qfreplace'
+--
+-- See :help lese-customization-type-checking to have lua-language-server know
+-- the types used below.
 
 local builtin = require("lese.builtin")
 local std = require("lese.std")

@@ -408,6 +408,32 @@ Similarly, the following Action changes the directory and then opens:
 	  builtin.action.open()
 	)
 <
+-----------------------------------------------------------------------------
+TYPE CHECKING			*lese-customization-type-checking*
+
+Every type "custom.lua" uses ("lese.Entrypoint", "lese.Source", ...) is
+declared in "lua/lese/types.lua" for lua-language-server. The server knows
+them only when lese is in its "workspace.library"; otherwise it reports
+"Undefined type or alias `lese.Entrypoint`". With |vim.lsp.config()|, add the
+directory "lua/" of lese:
+>lua
+	local lese = vim.api.nvim_get_runtime_file("lua/lese/types.lua", false)[1]
+	vim.lsp.config("lua_ls", {
+	  settings = {
+	    Lua = {
+	      workspace = {
+	        library = {
+	          vim.env.VIMRUNTIME,
+	          lese and vim.fn.fnamemodify(lese, ":h:h") or nil, -- lese's lua/
+	        },
+	      },
+	    },
+	  },
+	})
+<
+Run it after lese is on 'runtimepath'. The same applies to an extension: add
+its directory too to have its modules typed.
+
 =============================================================================
 HEADLESS					*lese-headless*
 
@@ -676,8 +702,7 @@ is open.
 HIGHLIGHT					*lese-highlight*
 
 *LeseNormal*
-	Default text in the picker window
-	(default: |hl-NormalFloat| on Neovim, |hl-Normal| on Vim).
+	Default text in the picker window (default: |hl-Normal|).
 
 *LeseBorder*
 	Borders of the picker window
