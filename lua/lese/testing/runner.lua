@@ -5,6 +5,11 @@ local M = {}
 
 local scope = {}
 local cases = {}
+local loading
+
+---The test that runs now: its full name and the file it is in.
+---@type { name: string, file?: string }?
+M.current = nil
 
 ---@param name string
 ---@param fn fun()
@@ -22,7 +27,7 @@ function M.it(name, fn)
     parts[i] = s
   end
   parts[#parts + 1] = name
-  cases[#cases + 1] = { name = table.concat(parts, " "), fn = fn }
+  cases[#cases + 1] = { name = table.concat(parts, " "), fn = fn, file = loading }
 end
 
 local function host_label(host)
@@ -77,12 +82,15 @@ function M.run(opts)
     if not chunk then
       error(err, 0)
     end
+    loading = path
     chunk()
+    loading = nil
   end
 
   local passed, failed = 0, 0
   for _, case in ipairs(cases) do
     if not filter or string.find(case.name, filter, 1, true) then
+      M.current = { name = case.name, file = case.file }
       local ok, err = xpcall(case.fn, function(e)
         if type(e) == "table" and e.message then
           return e.message

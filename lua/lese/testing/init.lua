@@ -6,6 +6,7 @@ local inspect = require("lese.testing.inspect")
 local contract = require("lese.core.contract")
 local scheduler_mod = require("lese.core.scheduler")
 local context = require("lese.core.context")
+local compat = require("lese.core.compat")
 
 local M = {}
 
@@ -86,7 +87,7 @@ contract.strict = true
 ---The host when running inside an editor, nil in a bare Lua.
 ---@return lese.Host?
 local function current_host()
-  if require("lese.core.compat").in_editor() then
+  if compat.in_editor() then
     return require("lese.host")
   end
   return nil
@@ -150,6 +151,64 @@ function M.run(name, fn, opts)
   return emitted, result
 end
 
+---Drive a whole picker headlessly: `t.picker({ source = ... }):type("q"):screen()`.
+---See lese.testing.driver for every method.
+---@param params lese.DriverParams
+---@return lese.Driver
+function M.picker(params)
+  return require("lese.testing.driver").new(params)
+end
+
+local function snapshot_path(current, name)
+  local dir = current.file:gsub("[^/\\]+$", "") .. "__snapshots__"
+  local stem = current.file:match("([^/\\]+)%.lua$") or "test"
+  local key = current.name .. (name and (" " .. name) or "")
+  return dir, dir .. "/" .. stem .. "." .. key:gsub("[^A-Za-z0-9%-_.]+", "_") .. ".snap"
+end
+
+---Compare `text` with the snapshot stored for the running test under
+---`__snapshots__/` next to the test file, writing it when there is none or when
+---LESE_UPDATE_SNAPSHOTS=1 (`just snapshot`). Every host compares with the same
+---snapshot.
+---@param text string
+---@param name? string  -- tells apart several snapshots in one test
+function M.snapshot(text, name)
+  local current = runner.current
+  if not current or not current.file then
+    error("t.snapshot() runs only inside a test", 2)
+  end
+  local dir, path = snapshot_path(current, name)
+  local update = os.getenv("LESE_UPDATE_SNAPSHOTS") == "1"
+  local file = io.open(path, "rb")
+  if file and not update then
+    local expected = file:read("*a")
+    file:close()
+    if expected ~= text .. "\n" then
+      fail(
+        string.format(
+          "snapshot %s differs; run `just snapshot` if the change is intended\n--- expected\n%s--- actual\n%s\n",
+          path,
+          expected,
+          text
+        ),
+        2
+      )
+    end
+    return
+  end
+  if file then
+    file:close()
+  end
+  if compat.in_editor() then
+    require("lese.host").fn.mkdir(dir, "p")
+  else
+    os.execute(string.format("mkdir -p %q", dir))
+  end
+  local out = assert(io.open(path, "wb"), "cannot write " .. path)
+  out:write(text, "\n")
+  out:close()
+end
+
 ---Build an item with `value` as its value and id.
 ---@param value string
 ---@param detail? table
@@ -169,10 +228,13 @@ function M.items(values)
   return items
 end
 
----The values of items, in order.
----@param items lese.Item[]
+---The values of items, in order; nil gives an empty list.
+---@param items lese.Item[]?
 ---@return string[]
 function M.values(items)
+  if items == nil then
+    return {}
+  end
   local values = {}
   for i, item in ipairs(items) do
     values[i] = item.value

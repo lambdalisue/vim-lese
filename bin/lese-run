@@ -1,0 +1,68 @@
+#!/bin/sh
+# Run a lese picker headlessly and print what it shows. `lese-run --help` for
+# the options; everything but --host and --rtp is read by lese.testing.cli.
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+host=nvim
+rtp=""
+args=""
+nl='
+'
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --host=*) host=${1#--host=} ;;
+    --host) shift; host=$1 ;;
+    --rtp=*) rtp="$rtp${nl}${1#--rtp=}" ;;
+    --rtp) shift; rtp="$rtp${nl}$1" ;;
+    -h|--help)
+      LESE_RUN_ARGS="--help" "${LESE_NVIM:-nvim}" --headless --clean --cmd "set rtp^=$root" \
+        -c 'lua io.stdout:write(require("lese.testing.cli").USAGE, "\n")' -c 'qall!' </dev/null
+      exit 0 ;;
+    *) args="$args${nl}$1" ;;
+  esac
+  shift
+done
+
+rtp_cmd() {
+  printf 'set rtp^=%s' "$root"
+  printf '%s\n' "$rtp" | while IFS= read -r dir; do
+    [ -n "$dir" ] || continue
+    dir=$(CDPATH= cd -- "$dir" && pwd)
+    printf ' | set rtp^=%s' "$dir"
+  done
+}
+
+run() {
+  cmd=$(rtp_cmd)
+  case "$1" in
+    nvim)
+      LESE_RUN_ARGS=$args "${LESE_NVIM:-nvim}" --headless --clean \
+        --cmd "$cmd" -c 'lua require("lese.testing.cli").main()' </dev/null ;;
+    vim)
+      LESE_RUN_ARGS=$args "${LESE_VIM:-vim}" -Nu NONE -i NONE -es \
+        --cmd "$cmd" -c 'lua require("lese.testing.cli").main()' </dev/null ;;
+    *)
+      echo "lese-run: unknown host '$1' (nvim, vim or both)" >&2
+      return 2 ;;
+  esac
+}
+
+case "$host" in
+  both)
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    status=0
+    run nvim >"$tmp/nvim" 2>&1 || status=$?
+    run vim >"$tmp/vim" 2>&1 || status=$?
+    cat "$tmp/nvim"
+    if ! diff -u --label nvim --label vim "$tmp/nvim" "$tmp/vim" >"$tmp/diff"; then
+      echo "lese-run: Neovim and Vim printed different results:" >&2
+      cat "$tmp/diff" >&2
+      exit 3
+    fi
+    exit "$status" ;;
+  *)
+    run "$host" ;;
+esac

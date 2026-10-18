@@ -34,3 +34,11 @@ test-on host filter="":
 
 # Everything CI runs.
 ci: fmt-check lint test
+
+# Run the tests and write every snapshot they compare with anew.
+snapshot filter="":
+    LESE_UPDATE_SNAPSHOTS=1 just test "{{filter}}"
+
+# Run a picker headlessly on Neovim and Vim and fail when they differ.
+run *args:
+    bin/lese-run --host=both {{args}}
