@@ -35,8 +35,13 @@ test filter="":
 test-on host filter="":
     TEST_FILTER="{{filter}}" {{ if host == "luajit" { "luajit -e 'package.path = \"lua/?.lua;lua/?/init.lua;\" .. package.path' test/run.lua test/core/*_test.lua" } else if host == "nvim" { "nvim --headless --clean --cmd 'set rtp^=.' -c 'luafile test/run.lua' </dev/null" } else { host + " -Nu NONE -i NONE -es --cmd 'set rtp^=.' -c 'luafile test/run.lua' </dev/null" } }}
 
+# Run the default file picker on Neovim and Vim and fail when they differ;
+# skipped where only one of them runs.
+hosts-check:
+    if [[ " {{hosts}} " == *" vim "* && " {{hosts}} " == *" nvim "* ]]; then bin/lese-run --host=both file --query concept --preview 1 >/dev/null; fi
+
 # Everything CI runs.
-ci: fmt-check lint test
+ci: fmt-check lint test hosts-check
 
 # Run the tests and write every snapshot they compare with anew.
 snapshot filter="":
