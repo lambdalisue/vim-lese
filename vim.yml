@@ -1,0 +1,22 @@
+# The `vim` module as both hosts provide it. Everything else that differs
+# between Neovim and Vim (+lua) is reached only from lua/lese/host.lua.
+base: lua51
+name: vim
+globals:
+  vim.fn:
+    any: true
+  vim.g:
+    any: true
+    property: new-fields
+  vim.b:
+    any: true
+    property: new-fields
+  vim.w:
+    any: true
+    property: new-fields
+  vim.t:
+    any: true
+    property: new-fields
+  vim.v:
+    any: true
+    property: new-fields

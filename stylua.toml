@@ -1,0 +1,6 @@
+# Lua51 makes newer syntax (goto, //, bitwise operators) a parse error, so
+# code stays inside what LuaJIT and every PUC Lua that Vim links share.
+syntax = "Lua51"
+column_width = 100
+indent_type = "Spaces"
+indent_width = 2

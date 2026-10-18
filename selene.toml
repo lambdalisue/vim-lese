@@ -1,0 +1,3 @@
+# vim.yml declares the Lua 5.1 standard library plus the part of `vim` that
+# Neovim and Vim (+lua) both provide.
+std = "vim"

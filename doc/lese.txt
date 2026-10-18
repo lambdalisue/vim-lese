@@ -1,0 +1,32 @@
+*lese.txt*	A fuzzy finder for Vim and Neovim, written in Lua; the successor of fall
+
+Author:  Alisue <lambdalisue@gmail.com>
+License: MIT License (See LICENSE)
+
+=============================================================================
+CONTENTS					*lese-contents*
+
+INTRODUCTION			|lese-introduction|
+REQUIREMENTS			|lese-requirements|
+USAGE				|lese-usage|
+INTERFACE			|lese-interface|
+
+=============================================================================
+INTRODUCTION					*lese-introduction*
+
+
+=============================================================================
+REQUIREMENTS					*lese-requirements*
+
+Neovim, or Vim built with |+lua|.
+
+=============================================================================
+USAGE						*lese-usage*
+
+
+=============================================================================
+INTERFACE					*lese-interface*
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
