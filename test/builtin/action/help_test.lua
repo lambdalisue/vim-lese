@@ -1,0 +1,17 @@
+local t = require("lese.testing")
+local host = require("lese.host")
+local builtin = require("lese.builtin")
+
+t.describe("builtin.action.help", function()
+  t.it("opens help at detail.helptag", function()
+    host.cmd("silent! only!")
+    t.invoke(builtin.action.help(), { item = t.item("x", { helptag = "help-summary" }) })
+    t.eq(host.eval("&buftype"), "help")
+    t.ok(host.fn.getline("."):find("*help-summary*", 1, true))
+    host.cmd("helpclose")
+  end)
+
+  t.it("is in default_help_actions", function()
+    t.ok(builtin.action.default_help_actions.help.invoke)
+  end)
+end)

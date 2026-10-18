@@ -1,0 +1,10 @@
+local t = require("lese.testing")
+local host = require("lese.host")
+local builtin = require("lese.builtin")
+
+t.describe("builtin.action.echo", function()
+  t.it("shows the item in the messages", function()
+    t.invoke(builtin.action.default_echo_actions.echo, { item = t.item("lese-echoed") })
+    t.ok(host.fn.execute("messages"):find("lese-echoed", 1, true))
+  end)
+end)

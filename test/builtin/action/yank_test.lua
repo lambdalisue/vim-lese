@@ -1,0 +1,16 @@
+local t = require("lese.testing")
+local host = require("lese.host")
+local builtin = require("lese.builtin")
+
+t.describe("builtin.action.yank", function()
+  t.it("puts the values of the selected items in v:register", function()
+    local items = t.items({ "a", "b" })
+    t.invoke(builtin.action.yank(), { item = items[1], selected_items = items })
+    t.eq(host.fn.getreg(host.eval("v:register")), "a\nb")
+  end)
+
+  t.it("puts the value of the item under the cursor when nothing is selected", function()
+    t.invoke(builtin.action.default_yank_actions.yank, { item = t.item("c") })
+    t.eq(host.fn.getreg(host.eval("v:register")), "c")
+  end)
+end)
