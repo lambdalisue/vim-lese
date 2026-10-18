@@ -4,11 +4,12 @@ endif
 let g:loaded_lese_highlight = 1
 
 function! s:init() abort
+  " fall linked to FloatNormal, which Neovim does not define, so its windows
+  " were drawn in Normal on Neovim too.
+  highlight default link LeseNormal Normal
   if has('nvim')
-    highlight default link LeseNormal NormalFloat
     highlight default link LeseBorder FloatBorder
   else
-    highlight default link LeseNormal Normal
     highlight default link LeseBorder Delimiter
   endif
 
@@ -20,7 +21,7 @@ function! s:init() abort
   " List
   highlight default link LeseListMatch Search
   highlight default link LeseListSelected CurSearch
-  sign define LeseListSelectedSign text=≫ texthl=LeseListSelected
+  sign define LeseListSelectedSign text=≫
 
   " Help
   highlight default link LeseHelpHeader Conceal

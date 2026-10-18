@@ -123,7 +123,6 @@ function M.window_open(dimension, opts)
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.bo[bufnr].bufhidden = "wipe"
   local config = float_config(dimension, opts)
-  config.style = "minimal"
   config.focusable = false
   config.noautocmd = true
   if not config.border then
@@ -133,10 +132,9 @@ function M.window_open(dimension, opts)
   local winid = vim.api.nvim_open_win(bufnr, false, config)
   local highlight = opts.highlight or {}
   vim.wo[winid].winhighlight = string.format(
-    "Normal:%s,FloatBorder:%s,FloatTitle:%s",
+    "Normal:%s,FloatBorder:%s",
     highlight.normal or "NormalFloat",
-    highlight.border or "FloatBorder",
-    highlight.border or "FloatTitle"
+    highlight.border or "FloatBorder"
   )
   return winid, bufnr
 end
@@ -179,6 +177,7 @@ function M.decorate(_, bufnr, decorations)
     pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, d.line - 1, d.column - 1, {
       end_col = d.column - 1 + d.length,
       hl_group = d.highlight,
+      priority = 0,
       strict = false,
     })
   end

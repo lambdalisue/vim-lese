@@ -253,7 +253,7 @@ local function prop_type(highlight)
   local name = "lese:" .. highlight
   if not prop_types[name] then
     if vim.fn.empty(vim.fn.prop_type_get(name)) == 1 then
-      vim.fn.prop_type_add(name, to_vim({ highlight = highlight, combine = 0, priority = 10 }))
+      vim.fn.prop_type_add(name, to_vim({ highlight = highlight, combine = 0, priority = 0 }))
     end
     prop_types[name] = true
   end
