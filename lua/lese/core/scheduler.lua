@@ -184,6 +184,12 @@ function Scheduler:drain(max_ticks)
   end
 end
 
+---True while a task is ready to run.
+---@return boolean
+function Scheduler:ready()
+  return #self.queue > 0
+end
+
 ---True while a task is ready or waiting.
 ---@return boolean
 function Scheduler:busy()
