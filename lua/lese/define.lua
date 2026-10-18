@@ -154,7 +154,7 @@ function M.refiner(def)
   }
 end
 
----@param def { name: string, style: fun(theme: lese.Theme): lese.Style, layout: fun(screen: lese.Size): lese.Layout }
+---@param def { name: string, style: (fun(theme: lese.Theme): lese.Style), layout: (fun(screen: lese.Size): lese.Layout) }
 ---@return lese.Coordinator
 function M.coordinator(def)
   contract.definition("coordinator", def, "layout")

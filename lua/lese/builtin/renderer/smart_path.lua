@@ -13,7 +13,7 @@ return function()
         if i % 256 == 0 then
           ctx:checkpoint()
         end
-        local text = item.label
+        local text = item.label or item.value
         local sep = string.match(text, "^.*()[/\\]")
         if sep then
           local filename = string.sub(text, sep + 1)
