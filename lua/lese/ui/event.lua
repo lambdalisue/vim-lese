@@ -7,7 +7,7 @@ local host = require("lese.host")
 local M = {}
 
 ---@class lese.EventHandler
----@field handle fun(self: lese.EventHandler, event: table)
+---@field handle fun(self: lese.EventHandler, event: table) -- receives an event from a <Plug> mapping while on top of the stack
 
 ---@type lese.EventHandler[]
 local stack = {}

@@ -1,10 +1,10 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.source.LineDetail
----@field bufnr integer
----@field bufname string
----@field line integer    -- 1-based line number
----@field context string  -- the line's text
+---@field bufnr integer  -- the buffer the line belongs to
+---@field bufname string -- the name of that buffer
+---@field line integer   -- 1-based line number
+---@field context string -- the line's text
 
 ---@class lese.builtin.source.LineOptions
 ---@field chunk_size? integer -- lines read at once, default 1000

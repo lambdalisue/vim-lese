@@ -21,21 +21,21 @@ M.RENDERER_ICON = "🆁 "
 M.PREVIEWER_ICON = "🅿 "
 
 ---@class lese.InputState
----@field query string
----@field cmdpos integer        -- 1-based byte position of the cursor in the query
----@field offset integer        -- characters scrolled off the left
----@field collected integer
----@field processed integer
----@field truncated boolean
----@field collecting boolean|"failed"
----@field processing boolean|"failed"
----@field spinner string        -- the spinner frame to show
----@field head_symbol? string
----@field fail_symbol? string
+---@field query string                -- the query typed so far
+---@field cmdpos integer              -- 1-based byte position of the cursor in the query
+---@field offset integer              -- characters scrolled off the left
+---@field collected integer           -- how many items the source emitted
+---@field processed integer           -- how many items passed the matcher
+---@field truncated boolean           -- shows "+" after the count when items were dropped
+---@field collecting boolean|"failed" -- shows the spinner at the end, or the fail symbol when "failed"
+---@field processing boolean|"failed" -- shows the spinner as the prompt, or the fail symbol when "failed"
+---@field spinner string              -- the spinner frame to show
+---@field head_symbol? string         -- the prompt, default ">"
+---@field fail_symbol? string         -- shown when collecting or processing failed
 
 ---@class lese.Frame
----@field lines string[]
----@field decorations lese.HostDecoration[]
+---@field lines string[]                    -- the window's lines
+---@field decorations lese.HostDecoration[] -- highlights on those lines
 
 ---The single line of the input window.
 ---@param state lese.InputState

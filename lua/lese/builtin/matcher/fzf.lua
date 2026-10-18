@@ -94,12 +94,12 @@ local function class_before(text, i)
 end
 
 ---@class lese.builtin.matcher.fzf.Term
----@field kind "fuzzy"|"exact"|"prefix"|"suffix"|"equal"
----@field inverse boolean
----@field text string             -- folded unless case_sensitive
----@field chars string[]          -- the UTF-8 characters of text
----@field firsts integer[]        -- the first byte of each character
----@field case_sensitive boolean
+---@field kind "fuzzy"|"exact"|"prefix"|"suffix"|"equal" -- how the term matches, from its `'`, `^` and `$` markers
+---@field inverse boolean                                -- the term was prefixed with `!` and excludes what it matches
+---@field text string                                    -- folded unless case_sensitive
+---@field chars string[]                                 -- the UTF-8 characters of text
+---@field firsts integer[]                               -- the first byte of each character
+---@field case_sensitive boolean                         -- compare without folding case
 
 ---@param text string
 ---@param case_sensitive boolean

@@ -58,10 +58,10 @@ local function invoke(name, action, params)
 end
 
 ---@class lese.StartOptions
----@field args? string[]
----@field query? string                  -- the query to start with (-input=)
----@field context? lese.PickerContext    -- resume from here
----@field save_session? boolean          -- default true
+---@field args? string[]              -- passed to the source or curator, from `:Lese {picker} {args}...`
+---@field query? string               -- the query to start with (-input=)
+---@field context? lese.PickerContext -- resume from here
+---@field save_session? boolean       -- default true
 
 ---Open picker `definition` and run the action the user chooses.
 ---@param definition lese.PickerDefinition

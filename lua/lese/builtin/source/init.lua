@@ -1,12 +1,21 @@
 ---@class lese.builtin.Source
+---Emits the named buffers; `filter` narrows them to listed, loaded or modified ones.
 ---@field buffer fun(opts?: lese.builtin.source.BufferOptions): lese.Source
+---Emits every file under the directory in `args[1]` (default: the current directory) without external commands; `filter_file`/`filter_directory` prune the walk.
 ---@field file fun(opts?: lese.builtin.source.FileOptions): lese.Source
+---Emits the help tags on 'runtimepath', once per language; pair with `builtin.previewer.helptag()` and `builtin.action.help()`.
 ---@field helptag fun(): lese.Source
+---Emits the entries of a history (`mode`, default "cmd"), newest first.
 ---@field history fun(opts?: lese.builtin.source.HistoryOptions): lese.Source
+---Emits each line of the buffer in `args[1]` (default: the current buffer), read `chunk_size` lines at a time.
 ---@field line fun(opts?: lese.builtin.source.LineOptions): lese.Source
+---Emits a fixed list of items.
 ---@field list fun(items: lese.Item[]): lese.Source
+---Emits nothing; a placeholder where a source is required.
 ---@field noop fun(): lese.Source
+---Emits `v:oldfiles`, most recent first.
 ---@field oldfiles fun(): lese.Source
+---Emits the entries of the current quickfix list.
 ---@field quickfix fun(): lese.Source
 
 return require("lese.builtin.lazy")("lese.builtin.source", {})

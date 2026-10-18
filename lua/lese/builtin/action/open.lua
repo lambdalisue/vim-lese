@@ -1,11 +1,11 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.action.OpenDetail
----@field path? string
----@field bufname? string
----@field bufnr? integer
----@field line? integer
----@field column? integer
+---@field path? string    -- the file to open, when there is no bufname
+---@field bufname? string -- the buffer to open by name; wins over path
+---@field bufnr? integer  -- the buffer to open when neither bufname nor path is set
+---@field line? integer   -- 1-based line to put the cursor on
+---@field column? integer -- 1-based byte column
 
 ---@class lese.builtin.action.OpenOptions
 ---@field bang? boolean    -- run the opener with !

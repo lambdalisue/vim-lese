@@ -1,13 +1,13 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.action.SubmatchOptions
----@field actions? table<string, lese.Action>  -- default: the picker's own
----@field default_action? string
----@field sorters? lese.Sorter[]
----@field renderers? lese.Renderer[]
----@field previewers? lese.Previewer[]
+---@field actions? table<string, lese.Action> -- default: the picker's own
+---@field default_action? string              -- default: the picker's own
+---@field sorters? lese.Sorter[]              -- default: the picker's own
+---@field renderers? lese.Renderer[]          -- default: the picker's own
+---@field previewers? lese.Previewer[]        -- default: the picker's own
 ---@field coordinator? lese.Coordinator
----@field theme? lese.Theme
+---@field theme? lese.Theme                   -- default: the picker's own
 
 ---Open the same picker again over the selected items (or every filtered item)
 ---with other matchers. Cancelling it returns to the picker it came from.

@@ -1,9 +1,9 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.source.HelptagDetail
----@field helptag string
----@field helpfile string  -- the file name under doc/
----@field lang? string     -- the language of a translated tags file (tags-ja)
+---@field helptag string  -- the tag, without the language suffix
+---@field helpfile string -- the file name under doc/
+---@field lang? string    -- the language of a translated tags file (tags-ja)
 
 ---Emits the help tags of every `doc/tags` and `doc/tags-xx` on 'runtimepath'.
 ---A tag is emitted once per language, from the first directory that has it.

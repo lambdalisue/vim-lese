@@ -1,19 +1,20 @@
 local define = require("lese.define")
 
+---The buffer's entry of `getbufinfo()`.
 ---@class lese.builtin.source.BufferInfo
----@field bufnr integer
----@field name string
----@field listed integer
----@field loaded integer
----@field changed integer
----@field hidden integer
----@field lnum integer
----@field lastused integer
+---@field bufnr integer    -- the buffer number
+---@field name string      -- the full path of the buffer's file
+---@field listed integer   -- 1 when the buffer is listed
+---@field loaded integer   -- 1 when the buffer is loaded
+---@field changed integer  -- 1 when the buffer is modified
+---@field hidden integer   -- 1 when the buffer is loaded but not in a window
+---@field lnum integer     -- 1-based cursor line when the buffer was last in the current window
+---@field lastused integer -- seconds since the epoch when the buffer was last used
 
 ---@class lese.builtin.source.BufferDetail
----@field bufnr integer
----@field bufname string
----@field bufinfo lese.builtin.source.BufferInfo
+---@field bufnr integer    -- the buffer number
+---@field bufname string   -- the full name of the buffer (`getbufinfo().name`)
+---@field bufinfo lese.builtin.source.BufferInfo -- what `getbufinfo()` reported
 
 ---@alias lese.builtin.source.BufferFilter "buflisted"|"bufloaded"|"bufmodified"
 

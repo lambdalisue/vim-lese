@@ -11,6 +11,7 @@ local loading
 ---@type { name: string, file?: string }?
 M.current = nil
 
+---Group the tests `fn` declares under `name`.
 ---@param name string
 ---@param fn fun()
 function M.describe(name, fn)
@@ -19,6 +20,7 @@ function M.describe(name, fn)
   scope[#scope] = nil
 end
 
+---Declare a test `name`; it runs later, with the `describe` names as its prefix.
 ---@param name string
 ---@param fn fun()
 function M.it(name, fn)

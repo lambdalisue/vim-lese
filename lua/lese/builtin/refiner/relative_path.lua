@@ -2,7 +2,7 @@ local define = require("lese.define")
 local path = require("lese.builtin._path")
 
 ---@class lese.builtin.refiner.RelativePathDetail
----@field path string
+---@field path string    -- the path to make relative; it appears in the value
 ---@field relpath string -- set by this refiner
 
 ---@class lese.builtin.refiner.RelativePathOptions

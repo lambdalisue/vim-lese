@@ -21,6 +21,8 @@ local function checked_emit(ctx, kind, name)
   })
 end
 
+---Define a source: `collect(ctx, { args })` hands items over with `ctx:emit()`, once per picker.
+---In strict mode every emitted item is checked. `name` is required.
 ---@param def { name: string, collect: fun(ctx: lese.Context, params: lese.CollectParams) }
 ---@return lese.Source
 function M.source(def)
@@ -37,6 +39,8 @@ function M.source(def)
   }
 end
 
+---Define a curator: `curate(ctx, { args, query })` hands items over with `ctx:emit()`, once per query.
+---In strict mode every emitted item is checked. `name` is required.
 ---@param def { name: string, curate: fun(ctx: lese.Context, params: lese.CurateParams) }
 ---@return lese.Curator
 function M.curator(def)
@@ -53,6 +57,9 @@ function M.curator(def)
   }
 end
 
+---Define a matcher: `match(ctx, { query, items })` emits the matching items, as copies when it adds
+---decorations. `incremental = true` shows results while it runs. In strict mode every emitted item
+---is checked. `name` is required.
 ---@param def { name: string, match: fun(ctx: lese.Context, params: lese.MatchParams), incremental?: boolean }
 ---@return lese.Matcher
 function M.matcher(def)
@@ -70,6 +77,8 @@ function M.matcher(def)
   }
 end
 
+---Define a sorter: `sort(ctx, { items })` reorders `items` in place. In strict mode it must keep
+---every item. `name` is required.
 ---@param def { name: string, sort: fun(ctx: lese.Context, params: lese.SortParams) }
 ---@return lese.Sorter
 function M.sorter(def)
@@ -87,6 +96,9 @@ function M.sorter(def)
   }
 end
 
+---Define a renderer: `render(ctx, { items })` sets `label` and `decorations` of the visible items
+---in place. In strict mode it must keep every item and keep decorations within the label. `name`
+---is required.
 ---@param def { name: string, render: fun(ctx: lese.Context, params: lese.RenderParams) }
 ---@return lese.Renderer
 function M.renderer(def)
@@ -107,6 +119,8 @@ function M.renderer(def)
   }
 end
 
+---Define a previewer: `preview(ctx, { item })` returns a preview item, or nil to show nothing.
+---In strict mode the result is checked. `name` is required.
 ---@param def { name: string, preview: fun(ctx: lese.Context, params: lese.PreviewParams): lese.PreviewItem? }
 ---@return lese.Previewer
 function M.previewer(def)
@@ -124,6 +138,8 @@ function M.previewer(def)
   }
 end
 
+---Define an action: `invoke(ctx, { item, selected_items, filtered_items, query })` acts on the
+---chosen items and returns true to keep the picker open. `name` is required.
 ---@param def { name: string, invoke: fun(ctx: lese.Context, params: lese.InvokeParams): boolean? }
 ---@return lese.Action
 function M.action(def)
@@ -137,6 +153,8 @@ function M.action(def)
   }
 end
 
+---Define a refiner: `refine(ctx, item)` returns the item, changed or not, or nil to drop it. In
+---strict mode the returned item is checked. `name` is required.
 ---@param def { name: string, refine: fun(ctx: lese.Context, item: lese.Item): lese.Item? }
 ---@return lese.Refiner
 function M.refiner(def)
@@ -154,6 +172,8 @@ function M.refiner(def)
   }
 end
 
+---Define a coordinator: `style(theme)` picks each window's border and `layout(screen)` places
+---each window. `name` is required.
 ---@param def { name: string, style: (fun(theme: lese.Theme): lese.Style), layout: (fun(screen: lese.Size): lese.Layout) }
 ---@return lese.Coordinator
 function M.coordinator(def)

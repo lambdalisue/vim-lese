@@ -10,8 +10,11 @@ local compat = require("lese.core.compat")
 
 local M = {}
 
+---Group the tests `fn` declares under `name`.
 M.describe = runner.describe
+---Declare a test `name`; it runs later, with the `describe` names as its prefix.
 M.it = runner.it
+---Render a Lua value on one line, stably, for assertion messages.
 M.inspect = inspect
 
 local function deep_equal(a, b)

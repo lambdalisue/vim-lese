@@ -5,16 +5,17 @@ local define = require("lese.define")
 
 local M = {}
 
+---A picker declared in custom.lua, as lese keeps it.
 ---@class lese.PickerDefinition
----@field name string
+---@field name string -- what `:Lese` opens it by
 ---@field build fun(args: string[]): { source: lese.Source, matchers: lese.Matcher[] }  -- fresh per picker
----@field sorters lese.Sorter[]
----@field renderers lese.Renderer[]
----@field previewers lese.Previewer[]
----@field actions table<string, lese.Action>
----@field default_action string
----@field coordinator? lese.Coordinator
----@field theme? lese.Theme
+---@field sorters lese.Sorter[] -- empty when the picker declared none
+---@field renderers lese.Renderer[] -- empty when the picker declared none
+---@field previewers lese.Previewer[] -- empty when the picker declared none
+---@field actions table<string, lese.Action> -- action name to action
+---@field default_action string -- the key of `actions` invoked on <CR>
+---@field coordinator? lese.Coordinator -- nil: the one set by `x.refine_setting`
+---@field theme? lese.Theme -- nil: the one set by `x.refine_setting`
 
 local state = {
   ---@type lese.Setting?
@@ -287,16 +288,19 @@ function M.load_function(main)
   state.loaded = true
 end
 
+---The coordinator and theme set by `x.refine_setting`, or the defaults.
 ---@return lese.Setting
 function M.setting()
   return state.setting or default_setting()
 end
 
+---The matchers and coordinator set by `x.refine_action_picker`, or the defaults.
 ---@return lese.ActionPickerParams
 function M.action_picker()
   return state.action_picker or default_action_picker()
 end
 
+---The picker declared as `name`, or nil.
 ---@param name string
 ---@return lese.PickerDefinition?
 function M.get(name)

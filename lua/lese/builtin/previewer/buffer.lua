@@ -1,9 +1,9 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.previewer.BufferDetail
----@field bufnr integer
----@field line? integer
----@field column? integer
+---@field bufnr integer   -- the buffer to show
+---@field line? integer   -- 1-based line to put the cursor on
+---@field column? integer -- 1-based byte column
 
 ---Shows the buffer at `detail.bufnr`, loading it when needed.
 ---@return lese.Previewer

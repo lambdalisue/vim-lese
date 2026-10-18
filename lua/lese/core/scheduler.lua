@@ -14,12 +14,12 @@ M.CANCELLED = setmetatable({}, {
 ---@alias lese.TaskStatus "ready"|"running"|"waiting"|"done"|"failed"|"cancelled"
 
 ---@class lese.Task
----@field name string
----@field status lese.TaskStatus
----@field error? any       -- the value the task raised, when it failed
----@field traceback? string
+---@field name string            -- shown in errors and starvation reports
+---@field status lese.TaskStatus -- where the task is in its life
+---@field error? any             -- the value the task raised, when it failed
+---@field traceback? string      -- the traceback of the error, when it failed
 ---@field package co thread
----@field cancelled boolean   -- set by cancel(); the task unwinds at its next checkpoint
+---@field cancelled boolean      -- set by cancel(); the task unwinds at its next checkpoint
 ---@field package woken boolean
 ---@field package started? boolean
 ---@field package starved? boolean
@@ -31,23 +31,23 @@ local Task = {}
 Task.__index = Task
 
 ---@class lese.TaskOptions
----@field name? string
----@field on_done? fun(task: lese.Task)    -- after the function returned
----@field on_error? fun(task: lese.Task)   -- after the function raised
----@field on_cancel? fun(task: lese.Task)  -- after the task unwound from a cancel
+---@field name? string                    -- default "task"
+---@field on_done? fun(task: lese.Task)   -- after the function returned
+---@field on_error? fun(task: lese.Task)  -- after the function raised
+---@field on_cancel? fun(task: lese.Task) -- after the task unwound from a cancel
 
 ---@class lese.SchedulerOptions
 ---@field budget? number          -- milliseconds a tick may run, default 8
 ---@field starve_ms? number       -- report a task that runs this long between checkpoints
----@field on_starve? fun(task: lese.Task, elapsed: number)
+---@field on_starve? fun(task: lese.Task, elapsed: number) -- told about a task that ran longer than starve_ms without a checkpoint
 ---@field clock? fun(): number    -- milliseconds; default os.clock()
 ---@field defer? fun(ms: integer, callback: fun()) -- run ticks on its own when given
 
 ---@class lese.Scheduler
----@field budget number
----@field current? lese.Task
----@field starve_ms number
----@field on_starve? fun(task: lese.Task, elapsed: number)
+---@field budget number -- milliseconds a tick may run
+---@field current? lese.Task -- the task running now, nil between tasks
+---@field starve_ms number -- milliseconds between checkpoints that count as starving the editor
+---@field on_starve? fun(task: lese.Task, elapsed: number) -- told about a task that starved the editor, once per task
 ---@field package clock fun(): number
 ---@field package defer? fun(ms: integer, callback: fun())
 ---@field package queue lese.Task[]
@@ -78,6 +78,7 @@ function M.new(opts)
   }, Scheduler)
 end
 
+---Arrange a tick through `defer` while tasks are queued and none is arranged.
 function Scheduler:schedule()
   if self.defer and not self.scheduled and #self.queue > 0 then
     self.scheduled = true
@@ -135,6 +136,7 @@ local function finish(task, status)
   end
 end
 
+---Run `task` until it yields, finishes or raises, and record how it ended.
 ---@param task lese.Task
 function Scheduler:resume(task)
   local previous = self.current
@@ -247,6 +249,7 @@ function Scheduler:busy()
   return #self.queue > 0 or next(self.waiting) ~= nil
 end
 
+---Report `task` through `on_starve` when it ran longer than `starve_ms` since its last mark.
 ---@param task lese.Task
 ---@param now number
 function Scheduler:measure(task, now)

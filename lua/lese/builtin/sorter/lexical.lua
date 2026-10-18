@@ -2,7 +2,7 @@ local define = require("lese.define")
 
 ---@class lese.builtin.sorter.LexicalOptions
 ---@field key? fun(item: lese.Item): string -- what to compare (default: the value)
----@field reverse? boolean
+---@field reverse? boolean                  -- descending order instead of ascending
 
 ---Order items by comparing strings byte by byte. Items with equal keys keep
 ---their order.

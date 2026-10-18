@@ -3,7 +3,7 @@ local path = require("lese.builtin._path")
 
 ---@class lese.builtin.curator.GrepDetail
 ---@field path string    -- absolute path of the file
----@field line integer
+---@field line integer   -- 1-based line number of the match
 ---@field context string -- the matched line
 
 ---@class lese.builtin.curator.GrepOptions

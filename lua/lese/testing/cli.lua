@@ -28,16 +28,16 @@ usage: lese-run [--host=nvim|vim|both] [--rtp DIR]... [--custom FILE]
   --host=both     run on Neovim and Vim and fail when their outputs differ]]
 
 ---@class lese.CliOptions
----@field picker string
----@field args string[]
----@field query? string
----@field press string[]
----@field limit integer
----@field select integer[]
----@field preview? integer
----@field action? string
----@field json boolean
----@field custom? string
+---@field picker string    -- the picker to run
+---@field args string[]    -- passed to the picker's source or curator
+---@field query? string    -- --query: typed into the picker
+---@field press string[]   -- --press: picker keys pressed after typing
+---@field limit integer    -- --limit: rows to show, default 20
+---@field select integer[] -- --select: 1-based rows to select
+---@field preview? integer -- --preview: the 1-based row to preview
+---@field action? string   -- --action: the action to invoke on the cursor row; "default" for the default one
+---@field json boolean     -- --json: print JSON instead of text
+---@field custom? string   -- --custom: the custom.lua to load instead of the default
 
 ---@param argv string[]
 ---@return lese.CliOptions

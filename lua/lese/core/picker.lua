@@ -10,58 +10,58 @@ local M = {}
 
 ---What a picker can be resumed from.
 ---@class lese.PickerContext
----@field query string
----@field selection table<any, true>
----@field collected lese.Item[]
----@field filtered lese.Item[]
----@field cursor integer
----@field offset integer
----@field matcher_index integer
----@field sorter_index integer
----@field renderer_index integer
----@field previewer_index integer
+---@field query string               -- the query typed
+---@field selection table<any, true> -- selected item ids
+---@field collected lese.Item[]      -- every item collected, in the order the source emitted them
+---@field filtered lese.Item[]       -- the matched and sorted items the list showed
+---@field cursor integer             -- 1-based index into filtered; 0 when empty
+---@field offset integer             -- rows scrolled off the top of the list
+---@field matcher_index integer      -- 1-based index of the matcher in use
+---@field sorter_index integer       -- 1-based index of the sorter in use
+---@field renderer_index integer     -- 1-based index of the renderer in use
+---@field previewer_index integer    -- 1-based index of the previewer in use
 
 ---@class lese.PickerModelParams
----@field name string
----@field source lese.Source
----@field matchers lese.Matcher[]
----@field sorters? lese.Sorter[]
----@field renderers? lese.Renderer[]
----@field previewers? lese.Previewer[]
----@field args? string[]
----@field scheduler lese.Scheduler
----@field host? lese.Host
----@field height? integer           -- rows the list shows, default 10
----@field scroll_offset? integer    -- rows kept above and below the cursor, default 2
----@field threshold? integer        -- most items collected, default 100000
+---@field name string                                   -- the picker's name, used in errors
+---@field source lese.Source                            -- collects the items once
+---@field matchers lese.Matcher[]                       -- at least one; the first is used unless context says otherwise
+---@field sorters? lese.Sorter[]                        -- default: none, which keeps the matcher's order
+---@field renderers? lese.Renderer[]                    -- default: none, which shows the values
+---@field previewers? lese.Previewer[]                  -- default: none, which previews nothing
+---@field args? string[]                                -- passed to the source, default {}
+---@field scheduler lese.Scheduler                      -- runs every module as a task
+---@field host? lese.Host                               -- what modules reach as `ctx.host`
+---@field height? integer                               -- rows the list shows, default 10
+---@field scroll_offset? integer                        -- rows kept above and below the cursor, default 2
+---@field threshold? integer                            -- most items collected, default 100000
 ---@field context? lese.PickerContext
----@field on_update? fun(kind: lese.Notification)
----@field on_error? fun(stage: string, message: string)
+---@field on_update? fun(kind: lese.Notification)       -- told what changed, to redraw that part
+---@field on_error? fun(stage: string, message: string) -- told which stage failed and why
 
 ---@class lese.PickerModel
----@field name string
----@field args string[]
----@field query string
----@field collected lese.Item[]     -- in the order the source emitted them
----@field matched lese.Item[]       -- what the matcher let through, in its order
----@field filtered lese.Item[]      -- matched, sorted: what the list shows
----@field visible lese.Item[]       -- rendered copies of the rows on screen
----@field cursor integer            -- 1-based index into filtered; 0 when empty
----@field offset integer            -- filtered[offset + 1] is the first row on screen
----@field height integer
+---@field name string                 -- the picker's name, used in errors
+---@field args string[]               -- passed to the source
+---@field query string                -- the query typed so far
+---@field collected lese.Item[]       -- in the order the source emitted them
+---@field matched lese.Item[]         -- what the matcher let through, in its order
+---@field filtered lese.Item[]        -- matched, sorted: what the list shows
+---@field visible lese.Item[]         -- rendered copies of the rows on screen
+---@field cursor integer              -- 1-based index into filtered; 0 when empty
+---@field offset integer              -- filtered[offset + 1] is the first row on screen
+---@field height integer              -- rows the list shows
 ---@field selection table<any, true>  -- selected item ids
----@field collecting boolean|"failed"
----@field processing boolean|"failed"
----@field truncated boolean
+---@field collecting boolean|"failed" -- true while the source runs; "failed" when it raised
+---@field processing boolean|"failed" -- true while matching or sorting runs; "failed" when a module raised
+---@field truncated boolean           -- the source emitted more than the threshold and the rest was dropped
 ---@field preview? lese.PreviewItem
----@field matchers lese.Matcher[]
----@field sorters lese.Sorter[]
----@field renderers lese.Renderer[]
----@field previewers lese.Previewer[]
----@field matcher_index integer
----@field sorter_index integer
----@field renderer_index integer
----@field previewer_index integer
+---@field matchers lese.Matcher[]     -- the matchers to switch between
+---@field sorters lese.Sorter[]       -- the sorters to switch between
+---@field renderers lese.Renderer[]   -- the renderers to switch between
+---@field previewers lese.Previewer[] -- the previewers to switch between
+---@field matcher_index integer       -- 1-based index of the matcher in use
+---@field sorter_index integer        -- 1-based index of the sorter in use
+---@field renderer_index integer      -- 1-based index of the renderer in use
+---@field previewer_index integer     -- 1-based index of the previewer in use
 ---@field package source lese.Source
 ---@field package scheduler lese.Scheduler
 ---@field package host? lese.Host
@@ -172,10 +172,12 @@ function M.new(params)
   return self
 end
 
+---Tell `on_update` what changed.
 function Picker:notify(kind)
   self.on_update(kind)
 end
 
+---A context for running the module `name`, emitting into `sink`.
 function Picker:context_for(name, sink)
   return context.new({ scheduler = self.scheduler, host = self.host, name = name, sink = sink })
 end
@@ -289,6 +291,7 @@ function Picker:start()
   })
 end
 
+---The matcher in use.
 ---@return lese.Matcher
 function Picker:matcher()
   return self.matchers[self.matcher_index]
@@ -408,6 +411,7 @@ function Picker:request_sort()
   })
 end
 
+---Show `items` as the filtered list and render it.
 function Picker:present(items)
   self.filtered = items
   if not self.tasks.match and self.processing ~= "failed" then
@@ -499,6 +503,7 @@ function Picker:request_preview()
   })
 end
 
+---The item under the cursor, or nil when the list is empty.
 ---@return lese.Item?
 function Picker:current_item()
   return self.filtered[self.cursor]
@@ -513,6 +518,7 @@ function Picker:line()
   return self.cursor - self.offset
 end
 
+---Change the query and match again.
 ---@param query string
 function Picker:set_query(query)
   if query == self.query then
@@ -523,12 +529,14 @@ function Picker:set_query(query)
   self:request_match(true)
 end
 
+---Change how many rows the list shows (at least 1).
 ---@param height integer
 function Picker:set_height(height)
   self.height = math.max(1, height)
   self:request_render()
 end
 
+---Move the cursor by `amount` rows, stopping at either end.
 ---@param amount integer
 function Picker:move_cursor(amount)
   if #self.filtered == 0 then
@@ -600,6 +608,7 @@ local function at(index, count)
   return clamp(index, 1, math.max(1, count))
 end
 
+---Switch the matcher by `amount` places, wrapping around when `cycle`.
 ---@param amount integer
 ---@param cycle? boolean
 function Picker:switch_matcher(amount, cycle)
@@ -614,6 +623,7 @@ function Picker:switch_matcher_at(index)
   self:request_match(true)
 end
 
+---Switch the sorter by `amount` places, wrapping around when `cycle`.
 ---@param amount integer
 ---@param cycle? boolean
 function Picker:switch_sorter(amount, cycle)
@@ -627,6 +637,7 @@ function Picker:switch_sorter_at(index)
   self:request_sort()
 end
 
+---Switch the renderer by `amount` places, wrapping around when `cycle`.
 ---@param amount integer
 ---@param cycle? boolean
 function Picker:switch_renderer(amount, cycle)
@@ -640,6 +651,7 @@ function Picker:switch_renderer_at(index)
   self:request_render()
 end
 
+---Switch the previewer by `amount` places, wrapping around when `cycle`.
 ---@param amount integer
 ---@param cycle? boolean
 function Picker:switch_previewer(amount, cycle)

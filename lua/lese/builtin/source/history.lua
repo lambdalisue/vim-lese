@@ -3,13 +3,13 @@ local define = require("lese.define")
 ---@alias lese.builtin.source.HistoryMode "cmd"|"search"|"expr"|"input"|"debug"
 
 ---@class lese.builtin.source.History
----@field line string
----@field mode lese.builtin.source.HistoryMode
----@field index integer   -- the entry's index in the history
----@field histnr integer  -- the index of the newest entry
+---@field line string                          -- the history entry's text
+---@field mode lese.builtin.source.HistoryMode -- which history the entry comes from
+---@field index integer                        -- the entry's index in the history
+---@field histnr integer                       -- the index of the newest entry
 
 ---@class lese.builtin.source.HistoryDetail
----@field history lese.builtin.source.History
+---@field history lese.builtin.source.History -- the entry and where it sits in its history
 
 ---@class lese.builtin.source.HistoryOptions
 ---@field mode? lese.builtin.source.HistoryMode -- default "cmd"

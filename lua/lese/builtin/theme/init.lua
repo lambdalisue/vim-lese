@@ -4,8 +4,8 @@
 
 ---@class lese.builtin.Theme
 ---@field MODERN lese.Theme   -- rounded corners, dashed dividers, Nerd Fonts icons
----@field SINGLE lese.Theme
----@field DOUBLE lese.Theme
+---@field SINGLE lese.Theme   -- single-line box drawing
+---@field DOUBLE lese.Theme   -- double-line box drawing
 ---@field ASCII lese.Theme    -- for terminals without box-drawing characters
 local M = {}
 

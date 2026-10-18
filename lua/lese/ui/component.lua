@@ -6,13 +6,13 @@ local host = require("lese.host")
 local M = {}
 
 ---@class lese.Component
----@field window? lese.Window
----@field dimension? lese.Dimension
----@field border? lese.Border
----@field title string
----@field zindex integer
----@field options string        -- `setlocal` arguments applied when it opens
----@field package shown? string  -- the last frame put on screen, serialised
+---@field window? lese.Window       -- the open window; nil while closed
+---@field dimension? lese.Dimension -- where it is or will be on screen
+---@field border? lese.Border       -- nil draws no border
+---@field title string              -- shown on the top border; set it, then call update_title()
+---@field zindex integer            -- stacking order; higher is on top
+---@field options string            -- `setlocal` arguments applied when it opens
+---@field package shown? string     -- the last frame put on screen, serialised
 ---@field package shown_title? string
 local Component = {}
 Component.__index = Component
@@ -35,6 +35,7 @@ local function decorated_title(title)
   return " " .. title .. " "
 end
 
+---Open the window at `dimension`; does nothing when it is open.
 ---@param dimension lese.Dimension
 function Component:open(dimension)
   if self.window then
@@ -54,6 +55,7 @@ function Component:open(dimension)
   self.shown = nil
 end
 
+---Move the window to `dimension`, or remember it for the next open.
 ---@param dimension lese.Dimension
 function Component:move(dimension)
   self.dimension = dimension
@@ -63,6 +65,7 @@ function Component:move(dimension)
   end
 end
 
+---Put `title` on the border when it changed since it was last shown.
 ---@return boolean changed
 function Component:update_title()
   if self.window and self.shown_title ~= self.title then
@@ -109,6 +112,7 @@ function Component:execute(command)
   end
 end
 
+---Close the window; does nothing when it is closed.
 function Component:close()
   if self.window then
     self.window:close()

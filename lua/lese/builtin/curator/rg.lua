@@ -3,8 +3,8 @@ local path = require("lese.builtin._path")
 
 ---@class lese.builtin.curator.RgDetail
 ---@field path string    -- absolute path of the file
----@field line integer
----@field column integer
+---@field line integer   -- 1-based line number of the match
+---@field column integer -- 1-based byte column of the match
 ---@field context string -- the matched line
 
 ---@class lese.builtin.curator.RgOptions

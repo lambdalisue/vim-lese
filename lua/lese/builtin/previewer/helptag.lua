@@ -1,9 +1,9 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.previewer.HelptagDetail
----@field helptag string
+---@field helptag string  -- the tag to jump to
 ---@field helpfile string -- the file name under doc/
----@field lang? string
+---@field lang? string    -- the language of a translated help file (ja for tags-ja)
 
 -- The path of each help file, keyed by 'runtimepath' and file name.
 local cache = {}

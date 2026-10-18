@@ -2,7 +2,7 @@ local define = require("lese.define")
 local path = require("lese.builtin._path")
 
 ---@class lese.builtin.refiner.AbsolutePathDetail
----@field path string
+---@field path string    -- the path to make absolute; it appears in the value
 ---@field abspath string -- set by this refiner
 
 ---@class lese.builtin.refiner.AbsolutePathOptions

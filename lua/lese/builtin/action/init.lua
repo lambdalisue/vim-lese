@@ -1,13 +1,23 @@
 ---@class lese.builtin.Action
+---Runs a buffer `command` (default "bdelete") on the buffer of each chosen item; see `default_buffer_actions`.
 ---@field buffer fun(opts?: lese.builtin.action.BufferOptions): lese.Action
+---Changes the directory (`command`: "cd", "lcd" or "tcd") to `detail.path` or `detail.bufname`, or its parent for a file; see `default_cd_actions`.
 ---@field cd fun(opts?: lese.builtin.action.CdOptions): lese.Action
+---Runs an Ex command built from `template` ("{}" is the value) for each chosen item, or puts it on the command line unless `immediate`.
 ---@field cmd fun(opts?: lese.builtin.action.CmdOptions): lese.Action
+---Shows the chosen items in the message history.
 ---@field echo fun(): lese.Action
+---Opens help at `detail.helptag`, in `detail.lang` when set.
 ---@field help fun(): lese.Action
+---Does nothing; a placeholder where an action is required.
 ---@field noop fun(): lese.Action
+---Opens `detail.bufname`, `detail.path` or `detail.bufnr` of each chosen item at `detail.line`/`detail.column`, with `opener` (default "edit"); see `default_open_actions`.
 ---@field open fun(opts?: lese.builtin.action.OpenOptions): lese.Action
+---Puts the selected items, or every filtered item, in the quickfix list; `after` runs a command such as "copen" afterwards.
 ---@field quickfix fun(opts?: lese.builtin.action.QuickfixOptions): lese.Action
+---Opens `detail.path` of each chosen item with the system's default application.
 ---@field systemopen fun(opts?: lese.builtin.action.SystemopenOptions): lese.Action
+---Puts the values of the chosen items, one per line, in `v:register`.
 ---@field yank fun(): lese.Action
 ---@field default_open_actions table<string, lese.Action>       -- open, open:split, open:vsplit, open:tabedit, open:drop
 ---@field default_systemopen_actions table<string, lese.Action> -- systemopen
@@ -19,6 +29,7 @@
 ---@field default_help_actions table<string, lese.Action>       -- help
 ---@field default_cmd_actions table<string, lese.Action>        -- cmd
 ---@field default_noop_actions table<string, lese.Action>       -- noop
+---Opens the same picker again over the selected items (or every filtered item) with other `matchers`; cancelling it returns to the picker it came from.
 ---@field submatch fun(matchers: lese.Matcher[], opts?: lese.builtin.action.SubmatchOptions): lese.Action
 ---@field default_submatch_actions table<string, lese.Action>   -- sub:fzf, sub:substring, sub:regexp
 

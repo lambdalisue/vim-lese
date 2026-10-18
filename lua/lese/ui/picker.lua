@@ -27,16 +27,16 @@ local HELP_WIDTH_RATIO = 0.98
 local HELP_HEIGHT_RATIO = 0.3
 
 ---@class lese.UiPickerParams
----@field name string
+---@field name string                  -- the picker's name, for errors and LesePickerEnter:{name}
 ---@field source lese.Source
----@field matchers lese.Matcher[]
----@field sorters? lese.Sorter[]
----@field renderers? lese.Renderer[]
----@field previewers? lese.Previewer[]
+---@field matchers lese.Matcher[]      -- at least one
+---@field sorters? lese.Sorter[]       -- default: none
+---@field renderers? lese.Renderer[]   -- default: none
+---@field previewers? lese.Previewer[] -- default: none, which opens no preview window
 ---@field coordinator lese.Coordinator
----@field theme lese.Theme
----@field args? string[]
----@field zindex integer
+---@field theme lese.Theme             -- borders, symbols and icons
+---@field args? string[]               -- passed to the source
+---@field zindex integer               -- the lowest z-index of its windows; it takes ZINDEX_ALLOCATION of them
 ---@field context? lese.PickerContext
 
 ---@class lese.PickerResult: lese.InvokeParams
@@ -44,8 +44,8 @@ local HELP_HEIGHT_RATIO = 0.3
 ---@field _picker? { definition: lese.PickerDefinition, setting: lese.Setting, zindex: integer } -- for builtin.action.submatch
 
 ---@class lese.UiPicker: lese.EventHandler
----@field name string
----@field model lese.PickerModel
+---@field name string            -- the picker's name
+---@field model lese.PickerModel -- the state and pipeline it shows
 ---@field package scheduler lese.Scheduler
 ---@field package coordinator lese.Coordinator
 ---@field package theme lese.Theme
@@ -57,7 +57,7 @@ local HELP_HEIGHT_RATIO = 0.3
 ---@field package cmdpos integer
 ---@field package input_offset integer
 ---@field package action? string
----@field preview_due? number         -- when the cursor row is previewed next
+---@field preview_due? number    -- when the cursor row is previewed next
 ---@field package help_pages? lese.Frame[]
 ---@field package help_page integer
 ---@field package started boolean
@@ -160,6 +160,7 @@ function Picker:set_query(query)
   self.cmdpos = #query + 1
 end
 
+---Mark the windows a model change affects for the next render.
 function Picker:on_update(kind)
   if kind == "query" or kind == "collect" or kind == "status" then
     self.dirty.input = true
@@ -175,10 +176,12 @@ function Picker:on_update(kind)
   end
 end
 
+---The size of the editor screen.
 function Picker:screen()
   return host.screen()
 end
 
+---Where the help window goes on `screen`: a band along the bottom.
 function Picker:help_dimension(screen)
   local width = math.floor(screen.width * HELP_WIDTH_RATIO)
   local height = math.floor(screen.height * HELP_HEIGHT_RATIO)
@@ -215,6 +218,7 @@ function Picker:open()
   host.emit("LesePickerEnterSystem:" .. self.name)
 end
 
+---Lay the windows out again for the current screen size and redraw.
 function Picker:relayout()
   local screen = self:screen()
   local layout = self.coordinator.layout(screen)
@@ -261,11 +265,13 @@ function Picker:dispose()
   self.model:dispose()
 end
 
+---The spinner frame for the current time.
 function Picker:spinner()
   local frames = self.theme.spinner or view.SPINNER
   return frames[math.floor(host.now() / SPINNER_INTERVAL) % #frames + 1]
 end
 
+---Draw the query line; returns whether it changed.
 function Picker:render_input()
   local model = self.model
   local busy = model.collecting == true or model.processing == true
@@ -293,6 +299,7 @@ function Picker:render_input()
   return self.input:show(frame)
 end
 
+---Draw the visible rows; returns whether they changed.
 function Picker:render_list()
   if not self.dirty.list then
     return false
@@ -314,6 +321,7 @@ function Picker:render_list()
   return true
 end
 
+---Draw the preview; returns whether it changed.
 function Picker:render_preview()
   if not self.dirty.preview or not self.preview or not self.preview.window then
     return false
@@ -345,6 +353,7 @@ function Picker:render_preview()
   return true
 end
 
+---Draw the current help page; returns whether it changed.
 function Picker:render_help()
   if not self.dirty.help or not self.help.window or not self.help.dimension then
     return false
@@ -393,6 +402,7 @@ function Picker:render()
   end
 end
 
+---Take the query and cursor from the command line.
 function Picker:sync_cmdline()
   local state = host.call("lese#internal#cmdline#state")
   if not state then
@@ -425,6 +435,7 @@ function Picker:tick()
   end
 end
 
+---Tick every few milliseconds while the picker runs.
 function Picker:loop()
   if not self.running then
     return
@@ -541,6 +552,7 @@ function Picker:handle(e)
   self:render()
 end
 
+---Open the help window, or close it when open.
 function Picker:toggle_help()
   if self.help.window then
     self.help:close()

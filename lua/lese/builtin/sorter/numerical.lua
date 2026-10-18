@@ -2,7 +2,7 @@ local define = require("lese.define")
 
 ---@class lese.builtin.sorter.NumericalOptions
 ---@field key? fun(item: lese.Item): (number|string|nil) -- what to compare (default: the value)
----@field reverse? boolean
+---@field reverse? boolean                               -- descending order instead of ascending
 
 ---Order items by a number: the key itself, or the string it converts from.
 ---Items whose key is not a number go after the others. Items with equal keys

@@ -13,11 +13,12 @@ local Context = {}
 Context.__index = Context
 
 ---@class lese.ContextOptions
----@field scheduler lese.Scheduler
----@field host? lese.Host
----@field name? string
----@field sink? fun(items: lese.Item[])
+---@field scheduler lese.Scheduler      -- runs the module and decides when it yields
+---@field host? lese.Host               -- what `ctx.host` is
+---@field name? string                  -- what `ctx.name` is, default "module"
+---@field sink? fun(items: lese.Item[]) -- receives what `ctx:emit()` hands over; without one emit raises
 
+---A context for running one module.
 ---@param opts lese.ContextOptions
 ---@return lese.Context
 function M.new(opts)
@@ -122,10 +123,10 @@ function Context:sleep(ms)
 end
 
 ---@class lese.ContextSpawnOptions
----@field cwd? string
----@field env? table<string, string>
+---@field cwd? string                  -- the directory to run in, default: the current one
+---@field env? table<string, string>   -- variables added to the environment
 ---@field on_stdout? fun(line: string) -- runs in the module; may emit and checkpoint
----@field on_stderr? fun(line: string)
+---@field on_stderr? fun(line: string) -- runs in the module for each line on stderr
 
 ---Run an external command and wait for it to exit. Output lines reach the
 ---handlers inside the module, so they may `emit`. A cancel kills the command.
@@ -179,6 +180,7 @@ function Context:spawn(cmd, opts)
   return code --[[@as integer]]
 end
 
+---The error a cancelled run unwinds with; `tostring()` gives "cancelled".
 M.CANCELLED = scheduler_mod.CANCELLED
 
 return M

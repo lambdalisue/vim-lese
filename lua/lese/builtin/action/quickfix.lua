@@ -1,13 +1,13 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.action.QuickfixDetail
----@field path? string
----@field bufname? string
----@field bufnr? integer
----@field line? integer
----@field column? integer
----@field length? integer  -- bytes from column; sets end_col
----@field context? string  -- the entry's text
+---@field path? string    -- the entry's file, used when bufname is not set
+---@field bufname? string -- the entry's file by buffer name; wins over path
+---@field bufnr? integer  -- the entry's buffer, used when neither bufname nor path is set
+---@field line? integer   -- 1-based line number
+---@field column? integer -- 1-based byte column
+---@field length? integer -- bytes from column; sets end_col
+---@field context? string -- the entry's text
 
 ---@class lese.builtin.action.QuickfixOptions
 ---@field what? table             -- merged into setqflist()'s {what} (title, id, nr, ...)

@@ -1,10 +1,10 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.previewer.FileDetail
----@field path string
+---@field path string          -- the file to show
 ---@field preview_path? string -- shown instead of `path` when set
----@field line? integer
----@field column? integer
+---@field line? integer        -- 1-based line to put the cursor on
+---@field column? integer      -- 1-based byte column
 
 ---@class lese.builtin.previewer.FileOptions
 ---@field limit? integer -- lines read from the top, default 10000; more when detail.line is beyond

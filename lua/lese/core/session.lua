@@ -5,8 +5,8 @@ local M = {}
 M.MAX_COUNT = 100
 
 ---@class lese.PickerSession
----@field name string
----@field args string[]
+---@field name string   -- the picker that ran
+---@field args string[] -- the arguments it ran with
 ---@field context lese.PickerContext
 
 ---@type lese.PickerSession[]

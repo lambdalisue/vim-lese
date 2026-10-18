@@ -1,7 +1,7 @@
 local define = require("lese.define")
 
 ---@class lese.builtin.source.OldfilesDetail
----@field path string
+---@field path string -- the file's path as `v:oldfiles` records it
 
 ---Emits `v:oldfiles`, most recent first.
 ---@return lese.Source

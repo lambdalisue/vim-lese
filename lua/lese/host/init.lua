@@ -12,26 +12,26 @@
 ---@alias lese.Border string[] -- topleft, top, topright, right, botright, bottom, botleft, left; "" omits that part
 
 ---@class lese.WindowOptions
----@field border? lese.Border
----@field title? string
----@field zindex? integer
----@field highlight? { normal?: string, border?: string }
+---@field border? lese.Border -- nil draws no border
+---@field title? string -- shown on the top border
+---@field zindex? integer -- stacking order; higher is on top
+---@field highlight? { normal?: string, border?: string } -- highlight groups for the text and the border
 
 ---@class lese.HostDecoration
----@field line integer
----@field column integer -- 1-based byte column
----@field length integer -- in bytes
----@field highlight string
+---@field line integer     -- 1-based line
+---@field column integer   -- 1-based byte column
+---@field length integer   -- in bytes
+---@field highlight string -- the highlight group
 
 ---@class lese.SpawnOptions
----@field cwd? string
----@field env? table<string, string>
----@field on_stdout? fun(line: string)
----@field on_stderr? fun(line: string)
----@field on_exit? fun(code: integer)
+---@field cwd? string                  -- the directory to run in, default: the current one
+---@field env? table<string, string>   -- variables added to the environment
+---@field on_stdout? fun(line: string) -- called with each line on stdout
+---@field on_stderr? fun(line: string) -- called with each line on stderr
+---@field on_exit? fun(code: integer)  -- called with the exit status once the command exits
 
 ---@class lese.Job
----@field kill fun()
+---@field kill fun() -- stops the command
 
 local impl
 if vim.api ~= nil then
@@ -177,6 +177,7 @@ function M.register(callback)
   return next_callback
 end
 
+---Forget a function registered with `register`.
 ---@param id integer
 function M.unregister(id)
   callbacks[id] = nil
@@ -197,11 +198,12 @@ end
 
 ---A floating window (Neovim) or a popup (Vim) that never takes focus.
 ---@class lese.Window
----@field winid integer
----@field bufnr integer
+---@field winid integer -- the window ID
+---@field bufnr integer -- the buffer shown in it
 local Window = {}
 Window.__index = Window
 
+---Open a window that never takes focus at `dimension`.
 ---@param dimension lese.Dimension
 ---@param opts? lese.WindowOptions
 ---@return lese.Window
@@ -210,6 +212,7 @@ function M.open_window(dimension, opts)
   return setmetatable({ winid = winid, bufnr = bufnr }, Window)
 end
 
+---Move or resize the window, or change its options; nil leaves that part as it is.
 ---@param dimension? lese.Dimension
 ---@param opts? lese.WindowOptions
 function Window:config(dimension, opts)
@@ -222,11 +225,13 @@ function Window:set_lines(lines)
   impl.set_lines(self.winid, self.bufnr, lines)
 end
 
+---Add highlights to the window's buffer.
 ---@param decorations lese.HostDecoration[]
 function Window:decorate(decorations)
   impl.decorate(self.winid, self.bufnr, decorations)
 end
 
+---Remove every highlight `decorate` added.
 function Window:undecorate()
   impl.undecorate(self.winid, self.bufnr)
 end
@@ -251,12 +256,14 @@ function Window:place_signs(sign, lines)
   end
 end
 
+---The value of a window-local option.
 ---@param name string
 ---@return any
 function Window:option(name)
   return impl.call("getwinvar", self.winid, "&" .. name)
 end
 
+---Close the window.
 function Window:close()
   impl.window_close(self.winid)
 end

@@ -11,22 +11,22 @@ local screen = require("lese.testing.screen")
 local M = {}
 
 ---@class lese.DriverParams
----@field name? string
+---@field name? string                        -- the picker's name, used in errors
 ---@field source lese.Source
----@field matchers? lese.Matcher[]       -- default: a plain substring match
----@field sorters? lese.Sorter[]
----@field renderers? lese.Renderer[]
----@field previewers? lese.Previewer[]
----@field actions? table<string, lese.Action>
----@field default_action? string
----@field args? string[]
----@field height? integer                -- rows on screen, default 10
----@field query? string
----@field timeout? integer               -- milliseconds to wait for the pipeline, default 10000
+---@field matchers? lese.Matcher[]            -- default: a plain substring match
+---@field sorters? lese.Sorter[]              -- default: none
+---@field renderers? lese.Renderer[]          -- default: none
+---@field previewers? lese.Previewer[]        -- default: none
+---@field actions? table<string, lese.Action> -- what invoke() can run, by name
+---@field default_action? string              -- what invoke() runs without a name
+---@field args? string[]                      -- passed to the source
+---@field height? integer                     -- rows on screen, default 10
+---@field query? string                       -- typed before anything else
+---@field timeout? integer                    -- milliseconds to wait for the pipeline, default 10000
 
 ---@class lese.Driver
----@field model lese.PickerModel
----@field errors string[]                -- what failed, by stage
+---@field model lese.PickerModel -- the picker being driven
+---@field errors string[]        -- what failed, by stage
 ---@field package scheduler lese.Scheduler
 ---@field package host? lese.Host
 ---@field package params lese.DriverParams
@@ -59,6 +59,7 @@ local function substring()
   })
 end
 
+---Start a picker headlessly and wait until every stage settles.
 ---@param params lese.DriverParams
 ---@return lese.Driver
 function M.new(params)
@@ -110,6 +111,7 @@ function Driver:wait()
   return self
 end
 
+---The stages still running, with the module each runs, for messages.
 function Driver:running()
   return self.model:running()
 end
