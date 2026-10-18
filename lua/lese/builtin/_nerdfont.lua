@@ -905,7 +905,7 @@ M.pattern = {
   { "/%.?yarnrc$", "" },
   { "/%.?yarnrc%.ya?ml$", "" },
   { "/%.env$", "" },
-  { "/%.env%.[%w_%.]+$", "" },
+  { "/%.env%.[A-Za-z0-9_%.]+$", "" },
   { "/%.eslintrc$", "󰱺" },
   { "/%.eslintrc%.c?js$", "󰱺" },
   { "/%.eslintrc%.ya?ml$", "󰱺" },

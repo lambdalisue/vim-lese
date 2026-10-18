@@ -16,11 +16,11 @@ end
 ---@param path string
 ---@return boolean
 function M.is_absolute(path)
-  return path:find("^[/\\]") ~= nil or path:find("^%a:[/\\]") ~= nil
+  return path:find("^[/\\]") ~= nil or path:find("^[A-Za-z]:[/\\]") ~= nil
 end
 
 local function is_root(path)
-  return path:find("^[/\\]$") ~= nil or path:find("^%a:[/\\]$") ~= nil
+  return path:find("^[/\\]$") ~= nil or path:find("^[A-Za-z]:[/\\]$") ~= nil
 end
 
 ---Remove one trailing separator, unless the path is a root.

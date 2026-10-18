@@ -6,7 +6,7 @@ local M = {}
 ---@param path string
 ---@return boolean
 function M.is_absolute(path)
-  return string.find(path, "^[/\\]") ~= nil or string.find(path, "^%a:[/\\]") ~= nil
+  return string.find(path, "^[/\\]") ~= nil or string.find(path, "^[A-Za-z]:[/\\]") ~= nil
 end
 
 ---The separator `path` uses: \ when it has no /, else /.

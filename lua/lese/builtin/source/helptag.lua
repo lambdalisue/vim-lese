@@ -18,7 +18,7 @@ return function()
       local files = fn.globpath(ctx.host.eval("&runtimepath"), "doc/tags*", 1, 1)
       for _, file in ipairs(files) do
         local name = fn.fnamemodify(file, ":t")
-        local lang = name:match("^tags%-(%w%w)$")
+        local lang = name:match("^tags%-([a-z][a-z])$")
         if name == "tags" or lang then
           local ok, lines = pcall(fn.readfile, file)
           if ok then
