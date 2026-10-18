@@ -414,25 +414,33 @@ TYPE CHECKING			*lese-customization-type-checking*
 Every type "custom.lua" uses ("lese.Entrypoint", "lese.Source", ...) is
 declared in "lua/lese/types.lua" for lua-language-server. The server knows
 them only when lese is in its "workspace.library"; otherwise it reports
-"Undefined type or alias `lese.Entrypoint`". With |vim.lsp.config()|, add the
-directory "lua/" of lese:
+"Undefined type or alias `lese.Entrypoint`". lese does not change your
+language server configuration; it tells you what to add:
+
+*lese#luals#library()*
+lese#luals#library([{base}])
+	Returns the directories in {base} (a library already configured),
+	then the "lua/" directories of lese and of every "lese-*" extension on
+	'runtimepath', each once, as a new list. Calling it again on its result
+	adds nothing. The same list comes from
+	"require('lese.luals').library({base})" in Lua.
+
+Hand it to "workspace.library" in whatever runs the server. With the
+built-in client of Neovim, look the directories up when the client starts,
+so plugins loaded later are found:
 >lua
-	local lese = vim.api.nvim_get_runtime_file("lua/lese/types.lua", false)[1]
 	vim.lsp.config("lua_ls", {
-	  settings = {
-	    Lua = {
-	      workspace = {
-	        library = {
-	          vim.env.VIMRUNTIME,
-	          lese and vim.fn.fnamemodify(lese, ":h:h") or nil, -- lese's lua/
-	        },
-	      },
-	    },
-	  },
+	  before_init = function(_, config)
+	    local ok, luals = pcall(require, "lese.luals")
+	    if ok then
+	      local workspace = config.settings.Lua.workspace
+	      workspace.library = luals.library(workspace.library)
+	    end
+	  end,
 	})
 <
-Run it after lese is on 'runtimepath'. The same applies to an extension: add
-its directory too to have its modules typed.
+With vim-lsp (or any client configured from Vim script), add
+"lese#luals#library()" to the "Lua.workspace.library" setting the same way.
 
 =============================================================================
 HEADLESS					*lese-headless*
