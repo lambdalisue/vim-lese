@@ -130,6 +130,12 @@ function M.window_open(dimension, opts)
     config.title = nil
   end
   local winid = vim.api.nvim_open_win(bufnr, false, config)
+  -- A floating window inherits these from the current window; they would take
+  -- columns the picker draws in, or paint over it.
+  vim.wo[winid].foldcolumn = "0"
+  vim.wo[winid].statuscolumn = ""
+  vim.wo[winid].colorcolumn = ""
+  vim.wo[winid].spell = false
   local highlight = opts.highlight or {}
   vim.wo[winid].winhighlight = string.format(
     "Normal:%s,FloatBorder:%s",

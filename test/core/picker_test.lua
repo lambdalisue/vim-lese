@@ -259,6 +259,53 @@ t.describe("picker", function()
     t.ok(runs <= 4, "matched " .. runs .. " times for 200 chunks")
   end)
 
+  t.it("matches what arrived during the cooldown while the source waits", function()
+    local wall, timers = 0, {}
+    local host = {
+      now = function()
+        return wall
+      end,
+      defer = function(ms, callback)
+        timers[#timers + 1] = { at = wall + ms, callback = callback }
+      end,
+    }
+    local release
+    local source = define.source({
+      name = "test.waiting",
+      collect = function(ctx)
+        ctx:emit({ id = 1, value = "a", detail = {} })
+        ctx:await(function(resolve)
+          release = resolve
+        end)
+      end,
+    })
+    local s = scheduler_mod.new()
+    local picker = picker_mod.new({
+      name = "test",
+      source = source,
+      matchers = { contains() },
+      scheduler = s,
+      host = host,
+    })
+    picker:start()
+    s:drain()
+    t.eq(#picker.filtered, 1)
+    picker.collected[2] = { id = 2, value = "b", detail = {} }
+    picker:request_match(false)
+    s:drain()
+    t.eq(#picker.filtered, 1)
+    wall = wall + 1000
+    for _, timer in ipairs(timers) do
+      if timer.at <= wall then
+        timer.callback()
+      end
+    end
+    s:drain()
+    t.eq(#picker.filtered, 2)
+    release()
+    s:drain()
+  end)
+
   t.it("stops collecting at the threshold and says the list is truncated", function()
     local picker, s = new({ source = list_source({ "a", "b", "c" }), threshold = 2 })
     picker:start()

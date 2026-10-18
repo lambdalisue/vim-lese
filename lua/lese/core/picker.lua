@@ -307,6 +307,7 @@ function Picker:request_match(restart)
   end
   if not restart and self.collecting == true and self:cooling() then
     self.match_dirty = true
+    self:retry_match()
     return
   end
   local n = #self.collected
@@ -337,9 +338,8 @@ function Picker:request_match(restart)
       self.matched = results
       self.matched_query = query
       self.matched_count = n
-      local now = self.scheduler:now()
-      self.match_ended = now
-      self.match_cost = now - started
+      self.match_ended = self:wall()
+      self.match_cost = self.scheduler:now() - started
       if self.match_dirty then
         if self.collecting == true then
           self:retry_match()
@@ -361,14 +361,31 @@ end
 -- twice as long as the last one took, and at least as long as fall waited.
 local MATCH_COOLDOWN = 100
 
+---Milliseconds on the editor's clock, which timers follow; the scheduler's
+---clock counts processor time, which stands still while a source waits on a
+---command. Without an editor the scheduler's clock is all there is.
+---@return number
+function Picker:wall()
+  if self.host then
+    return self.host.now()
+  end
+  return self.scheduler:now()
+end
+
+---Milliseconds left before a match that would only add arrived items may run.
+---@return number
+function Picker:cooldown_left()
+  if not self.match_ended then
+    return 0
+  end
+  local wait = math.max(MATCH_COOLDOWN, 2 * (self.match_cost or 0))
+  return wait - (self:wall() - self.match_ended)
+end
+
 ---True while a match that would only add arrived items should wait.
 ---@return boolean
 function Picker:cooling()
-  if not self.match_ended then
-    return false
-  end
-  local wait = math.max(MATCH_COOLDOWN, 2 * (self.match_cost or 0))
-  return self.scheduler:now() - self.match_ended < wait
+  return self:cooldown_left() > 0
 end
 
 ---Match the items that arrived during the cooldown once it is over, even when
@@ -378,8 +395,7 @@ function Picker:retry_match()
     return
   end
   self.retry_pending = true
-  local wait = math.max(MATCH_COOLDOWN, 2 * (self.match_cost or 0))
-  self.host.defer(math.ceil(wait), function()
+  self.host.defer(math.max(1, math.ceil(self:cooldown_left())), function()
     self.retry_pending = false
     if self.match_dirty and not self.disposed then
       self:request_match(false)
