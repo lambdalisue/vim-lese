@@ -10,7 +10,9 @@ return function(prefix, base)
     __index = function(t, name)
       local ok, mod = pcall(require, prefix .. "." .. name)
       if not ok then
-        if string.find(tostring(mod), "module '" .. prefix .. "." .. name .. "' not found", 1, true) then
+        if
+          string.find(tostring(mod), "module '" .. prefix .. "." .. name .. "' not found", 1, true)
+        then
           error(string.format("lese: %s has no '%s'", prefix, tostring(name)), 2)
         end
         error(mod, 0)
