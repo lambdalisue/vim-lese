@@ -53,8 +53,10 @@ Vim/Neovim plugins that provide more modules.
   an error that names the module, the item and the field that broke a
   contract. Static checks stop host API misuse before it runs.
 - **Usability is compatible with fall; code is not.** Commands, `<Plug>`
-  mappings and default keys, highlight groups, autocmds and the shape of the
-  configuration carry over with `Fall` renamed to `Lese`. Module code does not.
+  mappings, highlight groups, autocmds and the shape of the configuration
+  carry over with `Fall` renamed to `Lese`. The default keys follow the
+  author's own: the arrows, Home and End move the preview. Module code does
+  not.
 - **Only declared pickers exist.** Installing an extension adds nothing to the
   picker list; the user brings its pickers in from `custom.lua`.
 - **Types where they help, contracts where they do not.** Public types are

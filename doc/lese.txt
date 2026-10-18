@@ -127,17 +127,19 @@ Key		Description~
 <C-.>		Select all items.
 <C-j>		Select the current item and move to the next item.
 <C-k>		Move to the previous item and select it.
-<M-Home>	Move cursor to the first line of preview.
-<M-End>		Move cursor to the last line of preview.
-<M-Up>		Move cursor to the previous line of preview.
-<M-Down>	Move cursor to the next line of preview.
+<Home>		Move cursor to the first line of preview.
+<End>		Move cursor to the last line of preview.
+<Up>		Move cursor to the previous line of preview.
+<Down>		Move cursor to the next line of preview.
 <S-Up>		Scroll preview up by 'scroll' lines.
 <S-Down>	Scroll preview down by 'scroll' lines.
-<M-Left>	Scroll preview left.
-<M-Right>	Scroll preview right.
+<Left>		Scroll preview left.
+<Right>		Scroll preview right.
 <S-Left>	Scroll preview left by half a screen.
 <S-Right>	Scroll preview right by half a screen.
 <Tab>		Open the action selector.
+<C-x>		Invoke the "open:split" action.
+<C-v>		Invoke the "open:vsplit" action.
 <F1>		Open or close help window.
 <S-Home>	Show the previous page of help.
 <S-End>		Show the next page of help.
@@ -165,12 +167,11 @@ configure mappings. See |lese-mapping| for a list of available mappings.
 For example:
 >vim
 	function! s:my_lese() abort
-	  " Use <Up> and <Down> to navigate instead of <C-n> and <C-p>
+	  " Use <Up> and <Down> to navigate the list instead of the preview
 	  cnoremap <nowait> <Up> <Plug>(lese-list-prev)
 	  cnoremap <nowait> <Down> <Plug>(lese-list-next)
-	  " Open in split window
-	  cnoremap <nowait> <C-x> <Cmd>call lese#action('open:split')<CR>
-	  cnoremap <nowait> <C-v> <Cmd>call lese#action('open:vsplit')<CR>
+	  " Open in a new tab
+	  cnoremap <nowait> <C-o> <Cmd>call lese#action('open:tabedit')<CR>
 	endfunction
 
 	augroup my_lese
@@ -762,7 +763,7 @@ LesePickerEnter:{name}
 	function! s:my_lese() abort
 	  cnoremap <nowait> <Up> <Plug>(lese-list-prev)
 	  cnoremap <nowait> <Down> <Plug>(lese-list-next)
-	  cnoremap <nowait> <C-x> <Cmd>call lese#action('open:split')<CR>
+	  cnoremap <nowait> <C-o> <Cmd>call lese#action('open:tabedit')<CR>
 	endfunction
 
 	augroup my_lese
