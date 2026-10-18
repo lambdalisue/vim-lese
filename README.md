@@ -26,14 +26,30 @@ another. `<F1>` lists every key.
 The pickers are declared in `custom.lua`; `:LeseCustom` opens it, creating it
 from the defaults on first use. See `:help lese` for the full manual.
 
+## Writing an extension
+
+Start from [vim-lese-template](https://github.com/lambdalisue/vim-lese-template):
+it carries the tests, lint and CI an extension needs. Run a picker without
+opening the editor's UI, on Neovim and Vim at once:
+
+```sh
+bin/lese-run --host=both --rtp path/to/extension --custom custom.lua <picker> --query "<query>"
+```
+
+The module format is specified in [docs/spec/modules.md](docs/spec/modules.md).
+Claude Code users can install the `lese` plugin from this repository for a
+skill that writes extensions this way.
+
 ## Development
 
 Enter the development shell with `nix develop` (or copy `.envrc.sample` to
 `.envrc` and `direnv allow`), then:
 
 ```sh
-just fmt   # format every source
-just ci    # everything CI runs: format check, lint, tests on every host
+just fmt       # format every source
+just ci        # everything CI runs: format check, lint, tests on every host
+just snapshot  # write the snapshots tests compare with anew
+just run file --query init   # a picker on Neovim and Vim, diffed
 ```
 
 The design lives in [docs/concept.md](docs/concept.md), the decisions behind it

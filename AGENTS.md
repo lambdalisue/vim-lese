@@ -62,8 +62,17 @@ An extension is a plugin whose Lua lives under `lua/lese-<name>/`; the
 4. Done means `just ci` is green and `lese-run --host=both` shows no
    difference.
 
+Extensions start from `lambdalisue/vim-lese-template` and lint with
+`selene/lese.yml`, which rejects every `vim.*` access.
 `plugins/lese/skills/lese-extension/SKILL.md` carries the same guide as a
 Claude Code skill.
+
+## Trying a change
+
+`just run <picker> [--query Q] [--preview N] [--action NAME]` runs a picker of
+the default custom.lua on Neovim and Vim and fails when they print different
+text. `just snapshot` rewrites the snapshots `t.snapshot()` compares with;
+read the diff before keeping it.
 
 ## Quality gate
 
@@ -81,6 +90,7 @@ Run `just ci` before reporting a change as done. CI runs the same recipe.
 | `lua/lese/builtin/` | the modules lese ships |
 | `lua/lese/testing/` | test runner, picker driver, headless CLI, snapshots |
 | `bin/` | `lese-run`, the headless CLI |
+| `selene/` | `lese.yml`, the selene standard extensions lint with |
 | `test/` | `*_test.lua`, run on every host |
 | `doc/` | the Vim help file |
 | `docs/` | concept, ADRs, specs |
@@ -118,7 +128,7 @@ Scoped Commits:
 | `ui` | `lua/lese/ui/` |
 | `builtin` | `lua/lese/builtin/` |
 | `testing` | `lua/lese/testing/`, `bin/` |
-| `lua` | the rest of `lua/lese/` (`define`, `std`, `types`, custom loading) |
+| `lua` | the rest of `lua/lese/` (`define`, `std`, `types`, custom loading), `selene/` |
 | `test` | `test/` |
 | `doc` | `doc/` |
 | `docs` | `README.md`, `docs/concept.md` |
