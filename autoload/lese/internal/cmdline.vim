@@ -6,7 +6,7 @@ function! lese#internal#cmdline#input(text) abort
   augroup lese_internal_cmdline
     autocmd!
     autocmd CmdlineEnter * ++once call setcmdline(s:text)
-    autocmd CmdlineLeave * ++once let s:aborted = v:event.abort
+    autocmd CmdlineLeave * ++once let s:aborted = lese#internal#cmdline#aborted(v:char)
   augroup END
   try
     let l:result = input('')
@@ -18,6 +18,13 @@ function! lese#internal#cmdline#input(text) abort
     augroup END
   endtry
   return s:aborted ? v:null : l:result
+endfunction
+
+" Whether the command line that is being left was abandoned rather than
+" entered. Vim leaves v:event empty on CmdlineLeave, so the key that left the
+" command line decides it; both hosts set v:char to it.
+function! lese#internal#cmdline#aborted(char) abort
+  return a:char !=# "\<CR>" && a:char !=# "\<NL>"
 endfunction
 
 " The text input() is reading and the cursor's byte position in it, or v:null
